@@ -19,7 +19,7 @@ function Homepage() {
             {/* Hero Section */}
             <main>
                 <div>
-                    <h1>Cartesian Theater</h1>
+                    <h1>Cartesian Theater.</h1>
                     <p>Making messaging secure.</p>
 
                     <div>

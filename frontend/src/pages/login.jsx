@@ -4,19 +4,18 @@ import { AuthForm, MessageDisplay, BackButton } from '../components/AuthComponen
 import { apiRequest, saveTokens, errorMap, getErrorMessage, showMessage } from '../utility/auth.jsx'
 
 function Login() {
-
     const navigate = useNavigate()
     const [message, setMessage] = useState('')
 
-    const handleSignIn = async({ user, password }) => {
-
+    const handleSignIn = async ({ user, password }) => {
         setMessage('')
-        const response = await apiRequest('http://localhost:5001/signin', {user,password })
+        const response = await apiRequest('http://localhost:5001/signin', { user, password })
 
         //handle bad credentials
         if (!response.success) {
             showMessage(getErrorMessage(response), setMessage)
-            return}
+            return
+        }
 
         const { access_token, refresh_token } = response.data
         saveTokens(access_token, refresh_token)
