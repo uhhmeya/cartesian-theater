@@ -1,71 +1,42 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiRequest } from '../utils/apiRequest.jsx'
-import { errorMap, successMap } from '../utils/errorMap.jsx'
+import { AuthForm, MessageDisplay, BackButton } from '../components/AuthComponents.jsx'
+import { apiRequest, errorMap, getErrorMessage, showMessage } from '../utility/auth.jsx'
 
 function Signup() {
     const navigate = useNavigate()
-    const [user, setUser] = useState('')
-    const [password, setPassword] = useState('')
     const [message, setMessage] = useState('')
-    const [showMessage, setShowMessage] = useState(false)
 
-    const handleSignUp = async (e) => {
-        e.preventDefault()
-        setShowMessage(false)
+    const handleSignUp = async ({ user, password }) => {
+        setMessage('')
+        const response = await apiRequest('http://localhost:5001/signup', { user, password })
 
-        try {
-            const response = await apiRequest('http://localhost:5001/signup', { user, password })
-
-            if (response.success) {
-                setMessage(successMap.signup.label)
-                setShowMessage(true)
-                setTimeout(() => {
-                    setShowMessage(false)
-                    navigate('/')
-                }, 2000)
-            } else {
-                const config = errorMap[response.errorType] || errorMap['server_error']
-                const displayMessage = config.useServerMessage ? response.message : config.label
-                setMessage(displayMessage)
-                setShowMessage(true)
-                setTimeout(() => setShowMessage(false), 4000)
-            }
-
-        } catch (err) {
-            console.error("Sign up failed:", err)
-            setMessage("Something went wrong. Please try again.")
-            setShowMessage(true)
-            setTimeout(() => setShowMessage(false), 4000)
+        if (!response.success) {
+            showMessage(getErrorMessage(response), setMessage)
+            return
         }
+
+        showMessage(errorMap.signup.label, setMessage, 2000)
+        setTimeout(() => navigate('/login'), 2000)
     }
 
     return (
         <div>
+            <BackButton to="/login" text="Back to Sign In" />
             <h1>Cartesian Theater</h1>
             <h2>Create Account</h2>
 
-            <form onSubmit={handleSignUp}>
-                <input
-                    type="text"
-                    placeholder="Username"
-                    value={user}
-                    onChange={(e) => setUser(e.target.value)}
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                />
-                <button type="submit">Sign Up</button>
-            </form>
+            <AuthForm onSubmit={handleSignUp} submitText="Sign Up" />
 
-            <button onClick={() => navigate('/')}>
-                Back to Sign In
+            <button onClick={() => navigate('/login')}>
+                Already have an account? Sign In
             </button>
 
-            {showMessage && <div>{message}</div>}
+            <MessageDisplay
+                message={message}
+                onClose={() => setMessage('')}
+                type="info"
+            />
         </div>
     )
 }
