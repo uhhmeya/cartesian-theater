@@ -20,7 +20,7 @@ function Homepage() {
             <main>
                 <div>
                     <h1>Cartesian Theater.</h1>
-                    <p>Making messaging secure.</p>
+                    <p>Making messaging secure</p>
 
                     <div>
                         <button onClick={() => navigate('/signup')}>Get Started</button>
