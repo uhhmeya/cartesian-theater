@@ -1,11 +1,8 @@
 /* =============================================
-   CARTESIAN THEATER - HALVEX INSPIRED THEME
-   Complete CSS styling - no JSX changes needed!
+   MINIMAL STYLES - NAVBAR FOCUS
    ============================================= */
 
-/* =============================================
-   RESET AND BASE STYLES
-   ============================================= */
+/* Basic Reset */
 * {
     margin: 0;
     padding: 0;
@@ -16,110 +13,23 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     background-color: #0a0a0a;
     color: #ffffff;
-    line-height: 1.6;
-    font-size: 16px;
-    min-height: 100vh;
 }
 
 /* =============================================
-   TYPOGRAPHY
-   ============================================= */
-h1 {
-    font-size: 2.5rem;
-    font-weight: 700;
-    margin-bottom: 1rem;
-    color: #ffffff;
-}
-
-h2 {
-    font-size: 1.8rem;
-    font-weight: 600;
-    margin-bottom: 0.8rem;
-    color: #f0f0f0;
-}
-
-p {
-    color: #b0b0b0;
-    margin-bottom: 1rem;
-}
-
-/* =============================================
-   BUTTONS - ALL BUTTON STYLING
-   ============================================= */
-button {
-    font-family: inherit;
-    font-size: 0.9rem;
-    font-weight: 500;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    outline: none;
-    background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-    color: white;
-    border: 1px solid rgba(59, 130, 246, 0.3);
-}
-
-button:hover {
-    background: linear-gradient(135deg, #2563eb, #1e40af);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-}
-
-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-/* =============================================
-   FORM ELEMENTS
-   ============================================= */
-input[type="text"],
-input[type="password"] {
-    width: 100%;
-    padding: 12px 16px;
-    margin-bottom: 16px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 6px;
-    color: #ffffff;
-    font-size: 16px;
-    transition: all 0.2s ease;
-}
-
-input[type="text"]:focus,
-input[type="password"]:focus {
-    outline: none;
-    border-color: #3b82f6;
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-    background: rgba(255, 255, 255, 0.08);
-}
-
-input::placeholder {
-    color: #6b7280;
-}
-
-form {
-    width: 100%;
-}
-
-/* =============================================
-   HOMEPAGE HEADER STYLING
+   NAVBAR STYLES
    ============================================= */
 header {
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 1rem 0;
+    background: linear-gradient(180deg, rgba(20, 20, 20, 0.95) 0%, rgba(10, 10, 10, 0.95) 100%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    padding: 1.25rem 0;
     position: sticky;
     top: 0;
     z-index: 100;
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
 }
 
-header > div {
+header .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
@@ -129,293 +39,156 @@ header > div {
 }
 
 header h1 {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     margin: 0;
-    background: linear-gradient(135deg, #ffffff, #3b82f6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+    color: #ffffff;
+    font-weight: 600;
 }
 
 header nav {
     display: flex;
-    gap: 1rem;
+    gap: 0.75rem;
 }
 
+/* Navbar Button Base Styles */
 header button {
-    padding: 8px 16px;
-    font-size: 0.9rem;
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 400;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    outline: none;
+}
+
+/* Sign In Button - Dark Gray */
+.nav-signin {
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-signin:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+/* Sign Up Button - White */
+.nav-signup {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #ffffff;
+    font-weight: 450;
+}
+
+.nav-signup:hover {
+    background: #f0f0f0;
+    border-color: #f0f0f0;
 }
 
 /* =============================================
-   HOMEPAGE MAIN SECTION (HERO)
+   BASIC PAGE STYLES (Temporary)
    ============================================= */
 main {
-    min-height: 80vh;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+    min-height: calc(100vh - 80px);
+    position: relative;
+}
+
+/* Hero Section Glowy Purple Background */
+main.hero {
+    background: radial-gradient(ellipse at center top, rgba(147, 51, 234, 0.15) 0%, transparent 50%),
+    radial-gradient(ellipse at center bottom, rgba(139, 92, 246, 0.1) 0%, transparent 50%);
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
-    position: relative;
-    overflow: hidden;
-    padding: 2rem;
 }
 
-/* Tech background effect like Halvex */
-main::before {
+main.hero::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background:
-            radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
-            radial-gradient(circle at 40% 80%, rgba(34, 197, 94, 0.1) 0%, transparent 50%);
+    top: 20%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(147, 51, 234, 0.2) 0%, transparent 70%);
+    filter: blur(100px);
     z-index: -1;
 }
 
-main > div {
+.hero-content {
     max-width: 600px;
-    margin: 0 auto;
     z-index: 1;
 }
 
-main h1 {
-    font-size: 3.5rem;
-    margin-bottom: 1.5rem;
-    background: linear-gradient(135deg, #ffffff, #3b82f6, #8b5cf6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-main p {
-    font-size: 1.2rem;
-    margin-bottom: 2rem;
-    color: #b0b0b0;
-}
-
-main div:last-child {
+.hero-buttons {
     display: flex;
     gap: 1rem;
     justify-content: center;
-    flex-wrap: wrap;
+    margin-top: 2rem;
 }
 
-/* Secondary button style for "Learn More" */
-main div:last-child button:last-child {
-    background: rgba(255, 255, 255, 0.05);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
+.hero-buttons button:last-child {
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    color: rgba(255, 255, 255, 0.9);
 }
 
-main div:last-child button:last-child:hover {
+.hero-buttons button:last-child:hover {
     background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.3);
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
 }
 
-/* =============================================
-   AUTH PAGES (LOGIN/SIGNUP) STYLING
-   ============================================= */
-
-/* Target any div that contains auth forms */
-div:has(h2:is([contains="Sign In"], [contains="Create Account"])),
-div:has(h2):has(form) {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    position: relative;
-    background:
-            radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
-            radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
+.hero-content h1 {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    font-weight: 700;
 }
 
-/* Create container effect around auth content */
-div:has(form) {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    padding: 2rem;
-    width: 100%;
-    max-width: 400px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    margin: 2rem 0;
-}
-
-/* Center the auth headings */
-div:has(form) h1,
-div:has(form) h2 {
-    text-align: center;
-}
-
-div:has(form) h1 {
-    margin-bottom: 0.5rem;
-    background: linear-gradient(135deg, #ffffff, #3b82f6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-div:has(form) h2 {
-    margin-bottom: 2rem;
-    color: #b0b0b0;
-    font-weight: 400;
-}
-
-/* Style buttons after forms */
-div:has(form) button:not([type="submit"]) {
-    width: 100%;
-    margin-top: 1rem;
-    background: rgba(255, 255, 255, 0.05);
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
     color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-div:has(form) button:not([type="submit"]):hover {
-    background: rgba(255, 255, 255, 0.1);
-    border-color: rgba(255, 255, 255, 0.3);
+h2 {
+    font-size: 1.8rem;
+    margin-bottom: 0.8rem;
 }
 
-/* =============================================
-   BACK BUTTON STYLING
-   ============================================= */
-.back-button {
-    position: absolute !important;
-    top: 2rem !important;
-    left: 2rem !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-    color: #ffffff !important;
-    border: 1px solid rgba(255, 255, 255, 0.2) !important;
-    padding: 8px 16px !important;
-    font-size: 0.9rem !important;
-    z-index: 10;
+p {
+    margin-bottom: 1rem;
+    color: rgba(255, 255, 255, 0.7);
 }
 
-.back-button:hover {
-    background: rgba(255, 255, 255, 0.2) !important;
-    transform: translateX(-2px) !important;
-    box-shadow: none !important;
-}
-
-/* =============================================
-   MESSAGE COMPONENT STYLING
-   ============================================= */
-.message {
-    margin-top: 1rem;
-    padding: 12px 16px;
-    border-radius: 6px;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    animation: slideIn 0.3s ease;
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.message--info {
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.3);
-    color: #93c5fd;
-}
-
-.message__close {
-    background: none !important;
-    border: none !important;
-    color: inherit !important;
-    padding: 0 !important;
-    font-size: 1.2rem !important;
+button {
+    padding: 12px 24px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 8px;
     cursor: pointer;
-    margin-left: 1rem !important;
-    transition: opacity 0.2s ease !important;
+    font-weight: 500;
+    transition: all 0.2s ease;
 }
 
-.message__close:hover {
-    opacity: 0.7 !important;
-    transform: none !important;
-    box-shadow: none !important;
-}
-
-/* =============================================
-   DASHBOARD STYLING
-   ============================================= */
-
-div:has(h2:contains("Welcome")) {
-    min-height: 100vh;
-    padding: 2rem;
-    background:
-            radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.05) 0%, transparent 50%),
-            radial-gradient(circle at 90% 80%, rgba(168, 85, 247, 0.05) 0%, transparent 50%);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-}
-
-div:has(h2:contains("Welcome")) h1 {
-    background: linear-gradient(135deg, #ffffff, #3b82f6);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    margin-bottom: 1rem;
-}
-
-div:has(h2:contains("Welcome")) h2 {
-    color: #3b82f6;
-    margin-bottom: 1rem;
-}
-
-div:has(h2:contains("Welcome")) p {
-    max-width: 600px;
-    margin: 0 auto 2rem;
-    font-size: 1.1rem;
+button:hover {
+    background: #2563eb;
 }
 
 /* =============================================
-   RESPONSIVE DESIGN
+   RESPONSIVE
    ============================================= */
 @media (max-width: 768px) {
-    main h1 {
-        font-size: 2.5rem;
-    }
-
-    main div:last-child {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    main div:last-child button {
-        width: 100%;
-        max-width: 300px;
-    }
-
-    header > div {
+    header .container {
         flex-direction: column;
         gap: 1rem;
-    }
-
-    .back-button {
-        position: relative !important;
-        top: auto !important;
-        left: auto !important;
-        margin-bottom: 1rem !important;
     }
 }

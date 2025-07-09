@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 function AuthForm({ onSubmit, submitText, isLoading = false }) {
+
     const [user, setUser] = useState('')
     const [password, setPassword] = useState('')
 
