@@ -1,0 +1,54 @@
+import { useState } from 'react'
+
+function AuthForm({ onSubmit, submitText, isLoading = false }) {
+    const [user, setUser] = useState('')
+    const [password, setPassword] = useState('')
+
+    const handleSubmit = (e) => {
+        e.preventDefault()
+        onSubmit({ user, password })
+    }
+
+    return (
+        <form onSubmit={handleSubmit}>
+            <input
+                type="text"
+                placeholder="Username"
+                value={user}
+                onChange={(e) => setUser(e.target.value)}
+                required
+            />
+            <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+            />
+            <button type="submit" disabled={isLoading}>
+                {submitText}
+            </button>
+        </form>
+    )
+}
+
+function MessageDisplay({ message, onClose, type = "info" }) {
+    if (!message) return null
+
+    return (
+        <div className={`message message--${type}`}>
+            <div className="message__content">
+                {message}
+            </div>
+            <button
+                className="message__close"
+                onClick={onClose}
+                aria-label="Close message"
+            >
+                ×
+            </button>
+        </div>
+    )
+}
+
+export { AuthForm, MessageDisplay }

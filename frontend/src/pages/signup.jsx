@@ -1,9 +1,9 @@
 import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { apiRequest } from '../utils/apiRequest.jsx'
-import { errorMap, successMap } from '../utils/errorMap.jsx'
+import { apiRequest, errorMap} from '../utility/auth.jsx'
 
 function Signup() {
+
     const navigate = useNavigate()
     const [user, setUser] = useState('')
     const [password, setPassword] = useState('')
@@ -18,11 +18,11 @@ function Signup() {
             const response = await apiRequest('http://localhost:5001/signup', { user, password })
 
             if (response.success) {
-                setMessage(successMap.signup.label)
+                setMessage(errorMap.signup.label)
                 setShowMessage(true)
                 setTimeout(() => {
                     setShowMessage(false)
-                    navigate('/')
+                    navigate('/login')
                 }, 2000)
             } else {
                 const config = errorMap[response.errorType] || errorMap['server_error']
@@ -61,7 +61,7 @@ function Signup() {
                 <button type="submit">Sign Up</button>
             </form>
 
-            <button onClick={() => navigate('/')}>
+            <button onClick={() => navigate('/login')}>
                 Back to Sign In
             </button>
 

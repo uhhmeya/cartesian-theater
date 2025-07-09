@@ -1,20 +1,16 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { clearTokens, isLoggedIn } from '../utils/tokens.jsx'
+import { clearTokens, isLoggedIn } from '../utility/auth.jsx'
 
-function Home() {
+function Dashboard() {
     const navigate = useNavigate()
 
-    // Check if user is logged in
-    React.useEffect(() => {
-        if (!isLoggedIn()) {
-            navigate('/')
-        }
-    }, [navigate])
+    // Check if user is logged in when page first loads
+    React.useEffect(() => {if (!isLoggedIn()) navigate('/')}, [navigate])
 
     const handleLogout = () => {
         clearTokens()
-        navigate('/')
+        navigate('/login')
     }
 
     return (
@@ -27,4 +23,4 @@ function Home() {
     )
 }
 
-export default Home
+export default Dashboard
