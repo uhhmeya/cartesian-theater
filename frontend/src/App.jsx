@@ -3,6 +3,7 @@ import Homepage from './pages/Homepage.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Dashboard from './pages/dashboard.jsx'
+import './App.css'
 
 
 function App() {

@@ -11,7 +11,8 @@ export async function apiRequest(endpoint, payload) {
             headers['Authorization'] = `Bearer ${accessToken}`;
 
 
-        const response = await fetch(endpoint, {
+        const proxyEndpoint = endpoint.replace('http://localhost:5001', '/api');
+        const response = await fetch(proxyEndpoint, {
             method: 'POST',
             headers: headers,
             body: JSON.stringify(payload),

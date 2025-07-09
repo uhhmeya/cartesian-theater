@@ -22,7 +22,7 @@ function Signup() {
 
     return (
         <div>
-            <BackButton to="/login" text="Back to Sign In" />
+            <BackButton to="/" text="Back to Home" />
             <h1>Cartesian Theater</h1>
             <h2>Create Account</h2>
 

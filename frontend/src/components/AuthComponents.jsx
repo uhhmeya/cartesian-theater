@@ -52,7 +52,8 @@ function MessageDisplay({ message, onClose, type = "info" }) {
     )
 }
 
-function BackButton({ to = "/", text = "Back to Home" }) {
+function BackButton({ to = "/", text = "Back" }) {
+
     const navigate = useNavigate()
 
     return (
