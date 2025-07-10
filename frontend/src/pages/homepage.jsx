@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { StarryBackground, GlitchLogo, animationStyles } from '../components/styleComponents'
+import { StarryBackground, TextLogo, animationStyles } from '../components/styleComponents'
 import logo from '../../logo.webp'
 
 function Homepage() {
@@ -13,7 +13,7 @@ function Homepage() {
             <header>
                 <div className="container">
                     <h1 className="logo-container">
-                        <GlitchLogo src={logo} alt="Cartesian Theater" />
+                        <TextLogo src={logo} alt="Cartesian Theater" />
                         Cartesian Theater
                     </h1>
                     <nav>

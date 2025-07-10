@@ -1,11 +1,9 @@
-/* =============================================
-   MINIMAL STYLES - NAVBAR FOCUS
-   ============================================= */
-
-/* Import Inter font */
+/* Import Inter font - MUST BE FIRST */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap');
 
-/* Basic Reset */
+/* =============================================
+   GLOBAL STYLES & RESET
+   ============================================= */
 * {
     margin: 0;
     padding: 0;
@@ -21,6 +19,22 @@ body {
 }
 
 /* =============================================
+   ANIMATIONS
+   ============================================= */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1.1);
+    }
+}
+
+
+
+/* =============================================
    NAVBAR STYLES
    ============================================= */
 header {
@@ -32,7 +46,6 @@ header {
     top: 0;
     z-index: 100;
     box-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
-    position: relative;
 }
 
 /* Neon glow effect at bottom of navbar */
@@ -177,17 +190,6 @@ main.hero {
     animation: pulse 4s ease-in-out infinite;
 }
 
-@keyframes pulse {
-    0%, 100% {
-        opacity: 0.8;
-        transform: translate(-50%, -50%) scale(1);
-    }
-    50% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1.1);
-    }
-}
-
 .hero-content {
     max-width: 600px;
     width: 100%;
@@ -195,6 +197,24 @@ main.hero {
     z-index: 10;
     text-align: center;
     position: relative;
+}
+
+.hero-content h1 {
+    font-size: 3rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    font-stretch: condensed;
+    text-shadow: 0 0 30px rgba(138, 43, 226, 0.5);
+}
+
+.hero-content p {
+    font-size: 1.125rem;
+    margin-bottom: 2rem;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 400;
+    text-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
 }
 
 .hero-buttons {
@@ -240,22 +260,210 @@ main.hero {
     box-shadow: 0 0 25px rgba(138, 43, 226, 0.3);
 }
 
-.hero-content h1 {
-    font-size: 3rem;
-    margin-bottom: 0.5rem;
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 1.1;
-    font-stretch: condensed;
-    text-shadow: 0 0 30px rgba(138, 43, 226, 0.5);
+/* =============================================
+   AUTH PAGES STYLES
+   ============================================= */
+.auth-page, .dashboard-page {
+    min-height: 100vh;
+    background: #000000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
 }
 
-.hero-content p {
-    font-size: 1.125rem;
-    margin-bottom: 2rem;
-    color: rgba(255, 255, 255, 0.8);
-    font-weight: 400;
-    text-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
+.auth-container, .dashboard-container {
+    background: rgba(0, 0, 0, 0.85);  /* Brighter, more translucent */
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 3rem;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    position: relative;
+    z-index: 10;
+    /* Constant gradient border - no animation */
+    background-image:
+            linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
+            linear-gradient(135deg,
+            rgba(138, 43, 226, 0.6) 0%,
+            rgba(100, 149, 237, 0.6) 25%,
+            rgba(138, 43, 226, 0.6) 50%,
+            rgba(100, 149, 237, 0.6) 75%,
+            rgba(138, 43, 226, 0.6) 100%
+            );
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+    border: 2px solid transparent;
+    box-shadow:
+            0 0 30px rgba(138, 43, 226, 0.2),  /* Reduced glow */
+            0 0 60px rgba(100, 149, 237, 0.15),
+            0 4px 20px rgba(0, 0, 0, 0.5),
+            inset 0 0 15px rgba(138, 43, 226, 0.05);
+}
+
+/* Unique font sizing for auth containers */
+.auth-container h1, .dashboard-container h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+}
+
+.auth-container h2, .dashboard-container h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.auth-container p, .dashboard-container p {
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+.dashboard-container {
+    max-width: 600px;
+}
+
+/* Back button styling */
+.back-button {
+    position: absolute;
+    top: 2rem;
+    left: 2rem;
+    background: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 8px 16px;
+    font-size: 0.875rem;
+    z-index: 20;
+}
+
+.back-button:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+}
+
+/* Auth form styles */
+.auth-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 2rem 0;
+}
+
+.auth-form input {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-family: inherit;
+    outline: none;
+    transition: all 0.2s ease;
+}
+
+.auth-form input::placeholder {
+    color: rgba(255, 255, 255, 0.5);
+}
+
+.auth-form input:focus {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(138, 43, 226, 0.5);
+    box-shadow: 0 0 0 2px rgba(138, 43, 226, 0.2);
+}
+
+/* Primary button (submit) */
+.btn-primary {
+    background: #ffffff;
+    color: #000000;
+    border: 1px solid #ffffff;
+    font-weight: 500;
+    padding: 12px 28px;
+    margin-top: 0.5rem;
+}
+
+.btn-primary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+.btn-primary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Secondary button (switch auth mode) */
+.btn-secondary {
+    background: transparent;
+    color: rgba(255, 255, 255, 0.7);
+    border: none;
+    padding: 12px 28px;
+    font-size: 0.875rem;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+.btn-secondary:hover {
+    color: #ffffff;
+    text-decoration: underline;
+}
+
+/* Message display */
+.message {
+    margin-top: 1rem;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: rgba(138, 43, 226, 0.1);
+    border: 1px solid rgba(138, 43, 226, 0.3);
+    color: rgba(255, 255, 255, 0.9);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.875rem;
+}
+
+.message__close {
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 1.5rem;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    margin-left: 1rem;
+}
+
+.message__close:hover {
+    color: #ffffff;
+}
+
+/* Auth page background glow */
+.auth-glow {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle,
+    rgba(138, 43, 226, 0.2) 0%,
+    rgba(138, 43, 226, 0.1) 30%,
+    rgba(138, 43, 226, 0.05) 50%,
+    transparent 70%
+    );
+    z-index: 1;
+    pointer-events: none;
+    animation: pulse 4s ease-in-out infinite;
 }
 
 /* =============================================
@@ -331,5 +539,10 @@ button:hover {
 
     .hero-content h1 {
         font-size: 2.5rem;
+    }
+
+    .auth-container {
+        padding: 2rem;
+        width: 95%;
     }
 }

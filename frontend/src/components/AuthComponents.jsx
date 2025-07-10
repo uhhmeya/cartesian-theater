@@ -12,7 +12,7 @@ function AuthForm({ onSubmit, submitText, isLoading = false }) {
     }
 
     return (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="auth-form">
             <input
                 type="text"
                 placeholder="Username"
@@ -27,7 +27,7 @@ function AuthForm({ onSubmit, submitText, isLoading = false }) {
                 onChange={(e) => setPassword(e.target.value)}
                 required
             />
-            <button type="submit" disabled={isLoading}>
+            <button type="submit" className="btn-primary" disabled={isLoading}>
                 {submitText}
             </button>
         </form>

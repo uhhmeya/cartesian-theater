@@ -1,6 +1,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { clearTokens, isLoggedIn } from '../utility/auth.jsx'
+import { StarryBackground } from '../components/styleComponents'
 
 function Dashboard() {
     const navigate = useNavigate()
@@ -14,11 +15,16 @@ function Dashboard() {
     }
 
     return (
-        <div>
-            <h1>Cartesian Theater</h1>
-            <h2>Welcome! You're logged in.</h2>
-            <p>This is your secure messaging dashboard.</p>
-            <button onClick={handleLogout}>Logout</button>
+        <div className="dashboard-page">
+            <StarryBackground />
+            <div className="auth-glow"></div>
+
+            <div className="dashboard-container">
+                <h1>Cartesian Theater</h1>
+                <h2>Welcome! You're logged in.</h2>
+                <p>This is your secure messaging dashboard.</p>
+                <button className="btn-primary" onClick={handleLogout}>Logout</button>
+            </div>
         </div>
     )
 }

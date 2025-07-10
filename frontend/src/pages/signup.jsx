@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthForm, MessageDisplay, BackButton } from '../components/AuthComponents.jsx'
 import { apiRequest, errorMap, getErrorMessage, showMessage } from '../utility/auth.jsx'
+import { StarryBackground } from '../components/styleComponents'
 
 function Signup() {
     const navigate = useNavigate()
@@ -21,22 +22,28 @@ function Signup() {
     }
 
     return (
-        <div>
+        <div className="auth-page">
+            <StarryBackground />
+            <div className="auth-glow"></div>
+
             <BackButton to="/" text="Back to Home" />
-            <h1>Cartesian Theater</h1>
-            <h2>Create Account</h2>
 
-            <AuthForm onSubmit={handleSignUp} submitText="Sign Up" />
+            <div className="auth-container">
+                <h1>Cartesian Theater</h1>
+                <h2>Create Account</h2>
 
-            <button onClick={() => navigate('/login')}>
-                Already have an account? Sign In
-            </button>
+                <AuthForm onSubmit={handleSignUp} submitText="Sign Up" />
 
-            <MessageDisplay
-                message={message}
-                onClose={() => setMessage('')}
-                type="info"
-            />
+                <button className="btn-secondary" onClick={() => navigate('/login')}>
+                    Already have an account? Sign In
+                </button>
+
+                <MessageDisplay
+                    message={message}
+                    onClose={() => setMessage('')}
+                    type="info"
+                />
+            </div>
         </div>
     )
 }
