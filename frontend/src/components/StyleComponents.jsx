@@ -1,10 +1,5 @@
 import { useEffect, useRef } from 'react'
 
-// Three simple logo options:
-// 1. <GlitchLogo src={logo} /> - Your logo.webp with green glow
-// 2. <SimpleLogo /> - Green glowing ghost emoji
-// 3. <TextLogo /> - Simple "CT" text with green glow
-
 export function GlitchLogo({ src, alt = "Logo" }) {
     return (
         <div className="logo-glitch">
@@ -13,12 +8,10 @@ export function GlitchLogo({ src, alt = "Logo" }) {
     )
 }
 
-// Alternative: Simple emoji logo (no image needed)
 export function SimpleLogo() {
     return <span className="logo-fallback">👻</span>
 }
 
-// Alternative: Text logo with glow
 export function TextLogo() {
     return (
         <span style={{
@@ -43,38 +36,30 @@ export function StarryBackground() {
         canvas.width = window.innerWidth
         canvas.height = window.innerHeight
 
-        // Create sharper, smaller stars
-        // Create sharper, smaller stars with more density
         const stars = []
-        const starCount = 1500  // Much denser starfield
+        const starCount = 1500
 
         for (let i = 0; i < starCount; i++) {
             stars.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                size: Math.random() * 1.2 + 0.3, // Smaller, sharper stars
+                size: Math.random() * 1.2 + 0.3,
                 brightness: Math.random() * 0.6 + 0.4,
                 twinkleSpeed: Math.random() * 0.02 + 0.01
             })
         }
 
-        // Animation loop with better rendering
         const animate = () => {
-            // Clear with pure black
             ctx.fillStyle = '#000000'
             ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-            // Enable better rendering
             ctx.imageSmoothingEnabled = false
 
             stars.forEach(star => {
                 ctx.beginPath()
-                // Make stars sharper with smaller radius
                 ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2)
                 ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`
                 ctx.fill()
 
-                // Smoother twinkle
                 star.brightness += (Math.random() - 0.5) * star.twinkleSpeed
                 star.brightness = Math.max(0.2, Math.min(1, star.brightness))
             })
@@ -84,7 +69,6 @@ export function StarryBackground() {
 
         animate()
 
-        // Handle resize
         const handleResize = () => {
             canvas.width = window.innerWidth
             canvas.height = window.innerHeight

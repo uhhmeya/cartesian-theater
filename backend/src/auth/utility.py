@@ -6,6 +6,7 @@ from src.misc.models import User
 import re
 # noinspection PyUnresolvedReferences
 from flask_jwt_extended import create_access_token, create_refresh_token
+from functools import wraps
 
 COMMON_PASSWORDS = {
     'password', 'letmein', '123456', 'password123', 'admin123',
@@ -349,3 +350,13 @@ def displayUsers():
             "success": False,
             "error_type": "database_error"
         }), 500
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        user, error_response, status_code = verifyAccessToken()
+        if user is None:
+            return error_response, status_code
+        # Make user available to the route
+        return f(user, *args, **kwargs)
+    return decorated_function
