@@ -1,13 +1,10 @@
-import React from 'react'
 import { useNavigate } from 'react-router-dom'
-import { clearTokens, isLoggedIn } from '../utility/auth.jsx'
+import { BackButton } from '../components/AuthComponents.jsx'
 import { StarryBackground } from '../components/styleComponents'
+import { clearTokens } from '../utility/auth.jsx'
 
 function Dashboard() {
     const navigate = useNavigate()
-
-    // Check if user is logged in when page first loads
-    React.useEffect(() => {if (!isLoggedIn()) navigate('/')}, [navigate])
 
     const handleLogout = () => {
         clearTokens()
@@ -19,11 +16,24 @@ function Dashboard() {
             <StarryBackground />
             <div className="auth-glow"></div>
 
+            <BackButton to="/" text="Back to Home" />
+
             <div className="dashboard-container">
-                <h1>Cartesian Theater</h1>
-                <h2>Welcome! You're logged in.</h2>
-                <p>This is your secure messaging dashboard.</p>
-                <button className="btn-primary" onClick={handleLogout}>Logout</button>
+                <h1>Welcome to Cartesian Theater</h1>
+                <h2>You're logged in!</h2>
+
+                <p style={{ marginBottom: '2rem' }}>
+                    This is your secure dashboard. Start exploring the features of Cartesian Theater.
+                </p>
+
+                <div className="hero-buttons">
+                    <button onClick={() => alert('Feature coming soon!')}>
+                        Start Messaging
+                    </button>
+                    <button className="btn-secondary" onClick={handleLogout}>
+                        Logout
+                    </button>
+                </div>
             </div>
         </div>
     )

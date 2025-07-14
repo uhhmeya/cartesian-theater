@@ -12,15 +12,25 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Helvetica Neue', sans-serif;
-    background-color: #0a0a0a;  /* Very dark, almost black */
+    background-color: #141414;  /* Slightly more gray */
     color: #ffffff;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Subtle grid pattern overlay */
+    /* Enhanced grid pattern overlay with gray atmosphere */
     background-image:
-            linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
-    background-size: 50px 50px;
+            radial-gradient(ellipse at top, rgba(130, 130, 130, 0.12) 0%, transparent 50%),
+            radial-gradient(ellipse at bottom, rgba(110, 110, 110, 0.12) 0%, transparent 50%),
+            radial-gradient(ellipse at center, rgba(100, 100, 100, 0.08) 0%, transparent 70%),
+            linear-gradient(rgba(60, 60, 60, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(60, 60, 60, 0.03) 1px, transparent 1px),
+            repeating-linear-gradient(
+                    45deg,
+                    transparent,
+                    transparent 10px,
+                    rgba(80, 80, 80, 0.01) 10px,
+                    rgba(80, 80, 80, 0.01) 20px
+            );
+    background-size: 100% 100%, 100% 100%, 100% 100%, 50px 50px, 50px 50px, 28px 28px;
 }
 
 /* =============================================
@@ -28,12 +38,12 @@ body {
    ============================================= */
 @keyframes pulse {
     0%, 100% {
-        opacity: 0.6;
+        opacity: 0.5;
         transform: translate(-50%, -50%) scale(1);
     }
     50% {
-        opacity: 0.8;
-        transform: translate(-50%, -50%) scale(1.05);
+        opacity: 0.7;
+        transform: translate(-50%, -50%) scale(1.02);
     }
 }
 
@@ -43,17 +53,23 @@ body {
    NAVBAR STYLES
    ============================================= */
 header {
-    background: rgba(18, 18, 18, 0.95);
+    background: linear-gradient(180deg,
+    rgba(40, 40, 40, 0.98) 0%,
+    rgba(30, 30, 30, 0.95) 50%,
+    rgba(25, 25, 25, 0.98) 100%);
     backdrop-filter: blur(20px) saturate(180%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgba(100, 100, 100, 0.2);
     padding: 1.25rem 0;
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+    box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.05) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+            0 2px 20px rgba(0, 0, 0, 0.8);
 }
 
-/* Subtle glow effect at bottom of navbar */
+/* Metallic glow effect at bottom of navbar */
 header::after {
     content: '';
     position: absolute;
@@ -63,15 +79,15 @@ header::after {
     height: 1px;
     background: linear-gradient(90deg,
     transparent 0%,
-    rgba(139, 0, 0, 0.5) 30%,
-    rgba(178, 34, 34, 0.6) 50%,
-    rgba(139, 0, 0, 0.5) 70%,
+    rgba(150, 150, 150, 0.6) 30%,
+    rgba(200, 200, 200, 0.8) 50%,
+    rgba(150, 150, 150, 0.6) 70%,
     transparent 100%);
     filter: blur(0.5px);
     z-index: 101;
 }
 
-/* Additional glow shadow - more subtle */
+/* Additional metallic shadow */
 header::before {
     content: '';
     position: absolute;
@@ -81,8 +97,8 @@ header::before {
     height: 4px;
     background: linear-gradient(90deg,
     transparent 0%,
-    rgba(139, 0, 0, 0.2) 40%,
-    rgba(178, 34, 34, 0.2) 60%,
+    rgba(100, 100, 100, 0.3) 40%,
+    rgba(120, 120, 120, 0.3) 60%,
     transparent 100%);
     filter: blur(12px);
     z-index: 100;
@@ -95,6 +111,29 @@ header .container {
     display: flex;
     align-items: center;
     justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Add subtle metallic sheen to navbar */
+header .container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.02) 50%,
+    transparent 100%);
+    pointer-events: none;
+    animation: sheen 15s ease-in-out infinite;
+}
+
+@keyframes sheen {
+    0%, 100% { left: -100%; }
+    50% { left: 100%; }
 }
 
 header h1 {
@@ -126,45 +165,71 @@ header button {
     cursor: pointer;
     transition: all 0.15s ease;
     outline: none;
+    position: relative;
+    overflow: hidden;
 }
 
-/* Sign In Button - Dark with subtle border */
+/* Sign In Button - Metallic style */
 .nav-signin {
-    background: rgba(255, 255, 255, 0.05);
+    background: linear-gradient(180deg,
+    rgba(70, 70, 70, 0.9) 0%,
+    rgba(50, 50, 50, 0.9) 50%,
+    rgba(40, 40, 40, 0.9) 100%);
     color: rgba(255, 255, 255, 0.9);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    text-shadow: none;
-    box-shadow: none;
+    border: 1px solid rgba(100, 100, 100, 0.4);
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+    box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.1) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+            0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .nav-signin:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: linear-gradient(180deg,
+    rgba(80, 80, 80, 0.9) 0%,
+    rgba(60, 60, 60, 0.9) 50%,
+    rgba(50, 50, 50, 0.9) 100%);
+    border-color: rgba(120, 120, 120, 0.5);
     color: #ffffff;
-    box-shadow: none;
+    box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.15) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+            0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
-/* Sign Up Button - Dark red */
+/* Sign Up Button - Metallic dark red */
 .nav-signup {
-    background: #B22222;
+    background: linear-gradient(180deg,
+    #B22222 0%,
+    #8B0000 50%,
+    #690000 100%);
     color: #ffffff;
-    border: 1px solid #B22222;
+    border: 1px solid rgba(178, 34, 34, 0.8);
     font-weight: 450;
-    text-shadow: none;
-    box-shadow: 0 2px 10px rgba(178, 34, 34, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow:
+            0 1px 0 rgba(255, 100, 100, 0.3) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+            0 2px 8px rgba(139, 0, 0, 0.4);
 }
 
 .nav-signup:hover {
-    background: #DC143C;
-    border-color: #DC143C;
-    box-shadow: 0 4px 15px rgba(220, 20, 60, 0.4);
+    background: linear-gradient(180deg,
+    #DC143C 0%,
+    #B22222 50%,
+    #8B0000 100%);
+    border-color: rgba(220, 20, 60, 0.8);
+    box-shadow:
+            0 1px 0 rgba(255, 120, 120, 0.4) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+            0 2px 10px rgba(220, 20, 60, 0.5);
 }
 
 /* =============================================
    HERO SECTION STYLES
    ============================================= */
 main.hero {
-    background: #0a0a0a;
+    background: #141414;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -176,7 +241,7 @@ main.hero {
     overflow: hidden;
 }
 
-/* Gray fog/mist effect background */
+/* Enhanced gray fog effect background */
 main.hero::before {
     content: '';
     position: absolute;
@@ -185,9 +250,11 @@ main.hero::before {
     right: 0;
     bottom: 0;
     background:
-            radial-gradient(ellipse at top left, rgba(139, 0, 0, 0.05) 0%, transparent 40%),
-            radial-gradient(ellipse at bottom right, rgba(50, 50, 50, 0.1) 0%, transparent 40%),
-            radial-gradient(circle at center, rgba(30, 30, 30, 0.3) 0%, transparent 60%);
+            radial-gradient(ellipse at top left, rgba(140, 140, 140, 0.5) 0%, transparent 30%),
+            radial-gradient(ellipse at bottom right, rgba(120, 120, 120, 0.5) 0%, transparent 30%),
+            radial-gradient(circle at center, rgba(100, 100, 100, 0.6) 0%, transparent 40%),
+            radial-gradient(circle at 20% 50%, rgba(110, 110, 110, 0.4) 0%, transparent 35%),
+            radial-gradient(circle at 80% 50%, rgba(110, 110, 110, 0.4) 0%, transparent 35%);
     z-index: 1;
 }
 
@@ -200,31 +267,39 @@ main.hero::after {
     right: -50%;
     bottom: -50%;
     background:
-            radial-gradient(circle at 20% 80%, rgba(60, 60, 60, 0.2) 0%, transparent 50%),
-            radial-gradient(circle at 80% 20%, rgba(40, 40, 40, 0.15) 0%, transparent 50%);
-    transform: rotate(45deg);
+            radial-gradient(circle at 20% 80%, rgba(110, 110, 110, 0.3) 0%, transparent 40%),
+            radial-gradient(circle at 80% 20%, rgba(90, 90, 90, 0.3) 0%, transparent 40%),
+            radial-gradient(ellipse at center, rgba(70, 70, 70, 0.2) 0%, transparent 60%);
+    transform: rotate(0deg);
     z-index: 0;
-    opacity: 0.6;
+    opacity: 0.8;
+    animation: float 25s ease-in-out infinite;
 }
 
-/* Dark Red Glow Effect - Very subtle */
+@keyframes float {
+    0%, 100% { transform: rotate(0deg) scale(1) translateX(0); }
+    33% { transform: rotate(120deg) scale(1.1) translateX(-10px); }
+    66% { transform: rotate(240deg) scale(0.95) translateX(10px); }
+}
+
+/* Gray-tinted Glow Effect */
 .purple-glow {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 800px;
-    height: 800px;
+    width: 900px;
+    height: 900px;
     background: radial-gradient(circle,
-    rgba(139, 0, 0, 0.15) 0%,
-    rgba(139, 0, 0, 0.08) 20%,
-    rgba(60, 60, 60, 0.05) 40%,
+    rgba(100, 100, 100, 0.15) 0%,
+    rgba(80, 80, 80, 0.12) 20%,
+    rgba(60, 60, 60, 0.08) 40%,
     transparent 70%
     );
     z-index: 1;
     pointer-events: none;
-    animation: pulse 8s ease-in-out infinite;
-    filter: blur(40px);
+    animation: pulse 10s ease-in-out infinite;
+    filter: blur(50px);
 }
 
 .hero-content {
@@ -234,14 +309,18 @@ main.hero::after {
     z-index: 10;
     text-align: center;
     position: relative;
-    background: rgba(20, 20, 20, 0.6);
+    background:
+            linear-gradient(135deg, rgba(139, 0, 0, 0.06) 0%, rgba(100, 100, 100, 0.08) 100%),
+            linear-gradient(180deg, rgba(40, 40, 40, 0.8) 0%, rgba(25, 25, 25, 0.8) 100%);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(100, 100, 100, 0.2);
     border-radius: 24px;
     padding: 4rem 3rem;
     box-shadow:
-            0 20px 40px rgba(0, 0, 0, 0.5),
-            inset 0 0 20px rgba(139, 0, 0, 0.05);
+            0 20px 40px rgba(0, 0, 0, 0.6),
+            0 0 60px rgba(80, 80, 80, 0.2),
+            0 1px 0 rgba(150, 150, 150, 0.1) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.5) inset;
 }
 
 .hero-content h1 {
@@ -270,40 +349,66 @@ main.hero::after {
     margin-top: 2.5rem;
 }
 
-/* Get Started button - Dark red primary */
+/* Get Started button - Metallic dark red */
 .hero-buttons button:first-child {
-    background: #B22222;
-    border: 1px solid #B22222;
+    background: linear-gradient(180deg,
+    #B22222 0%,
+    #8B0000 50%,
+    #690000 100%);
+    border: 1px solid rgba(178, 34, 34, 0.8);
     color: #ffffff;
     padding: 12px 28px;
     font-weight: 500;
     font-size: 0.875rem;
-    box-shadow: 0 4px 15px rgba(178, 34, 34, 0.4);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow:
+            0 1px 0 rgba(255, 100, 100, 0.3) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+            0 4px 15px rgba(178, 34, 34, 0.4);
 }
 
 .hero-buttons button:first-child:hover {
-    background: #DC143C;
-    border-color: #DC143C;
-    box-shadow: 0 6px 20px rgba(220, 20, 60, 0.5);
+    background: linear-gradient(180deg,
+    #DC143C 0%,
+    #B22222 50%,
+    #8B0000 100%);
+    border-color: rgba(220, 20, 60, 0.8);
+    box-shadow:
+            0 1px 0 rgba(255, 120, 120, 0.4) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+            0 6px 20px rgba(220, 20, 60, 0.5);
 }
 
-/* Learn More button - Glass morphism with red accent */
+/* Learn More button - Metallic glass morphism */
 .hero-buttons button:last-child {
-    background: rgba(255, 255, 255, 0.05);
+    background: linear-gradient(180deg,
+    rgba(70, 70, 70, 0.6) 0%,
+    rgba(50, 50, 50, 0.6) 50%,
+    rgba(40, 40, 40, 0.6) 100%);
     color: rgba(255, 255, 255, 0.9);
     font-weight: 450;
     padding: 12px 28px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(100, 100, 100, 0.3);
     font-size: 0.875rem;
     backdrop-filter: blur(20px);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+    box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.1) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+            0 2px 10px rgba(0, 0, 0, 0.3);
 }
 
 .hero-buttons button:last-child:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.2);
+    background: linear-gradient(180deg,
+    rgba(80, 80, 80, 0.7) 0%,
+    rgba(60, 60, 60, 0.7) 50%,
+    rgba(50, 50, 50, 0.7) 100%);
+    border-color: rgba(120, 120, 120, 0.4);
     color: #ffffff;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.15) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+            0 4px 15px rgba(0, 0, 0, 0.4);
 }
 
 /* =============================================
@@ -311,7 +416,7 @@ main.hero::after {
    ============================================= */
 .auth-page {
     min-height: 100vh;
-    background: #0a0a0a;
+    background: #141414;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -319,7 +424,7 @@ main.hero::after {
     overflow: hidden;
 }
 
-/* Gray fog effect for auth pages */
+/* Enhanced gray fog effect for auth pages */
 .auth-page::before {
     content: '';
     position: absolute;
@@ -328,15 +433,38 @@ main.hero::after {
     right: 0;
     bottom: 0;
     background:
-            radial-gradient(circle at 30% 30%, rgba(50, 50, 50, 0.2) 0%, transparent 50%),
-            radial-gradient(circle at 70% 70%, rgba(40, 40, 40, 0.2) 0%, transparent 50%),
-            radial-gradient(ellipse at center, rgba(30, 30, 30, 0.3) 0%, transparent 70%);
+            radial-gradient(circle at 30% 20%, rgba(140, 140, 140, 0.5) 0%, transparent 30%),
+            radial-gradient(circle at 70% 80%, rgba(120, 120, 120, 0.5) 0%, transparent 30%),
+            radial-gradient(ellipse at center, rgba(100, 100, 100, 0.6) 0%, transparent 45%),
+            radial-gradient(circle at 10% 50%, rgba(130, 130, 130, 0.4) 0%, transparent 25%),
+            radial-gradient(circle at 90% 50%, rgba(130, 130, 130, 0.4) 0%, transparent 25%);
     z-index: 1;
+}
+
+/* Additional atmospheric layer */
+.auth-page::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+            radial-gradient(ellipse at top, rgba(130, 130, 130, 0.25) 0%, transparent 40%),
+            radial-gradient(ellipse at bottom, rgba(90, 90, 90, 0.25) 0%, transparent 40%);
+    z-index: 2;
+    mix-blend-mode: screen;
+    animation: breathe 10s ease-in-out infinite;
+}
+
+@keyframes breathe {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 1; }
 }
 
 .dashboard-page {
     min-height: 100vh;
-    background: #0a0a0a;
+    background: #141414;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -344,7 +472,7 @@ main.hero::after {
     overflow: hidden;
 }
 
-/* Gray fog effect for dashboard page */
+/* Enhanced gray fog effect for dashboard page */
 .dashboard-page::before {
     content: '';
     position: absolute;
@@ -353,14 +481,34 @@ main.hero::after {
     right: 0;
     bottom: 0;
     background:
-            radial-gradient(circle at 30% 30%, rgba(50, 50, 50, 0.2) 0%, transparent 50%),
-            radial-gradient(circle at 70% 70%, rgba(40, 40, 40, 0.2) 0%, transparent 50%),
-            radial-gradient(ellipse at center, rgba(30, 30, 30, 0.3) 0%, transparent 70%);
+            radial-gradient(circle at 30% 20%, rgba(140, 140, 140, 0.5) 0%, transparent 30%),
+            radial-gradient(circle at 70% 80%, rgba(120, 120, 120, 0.5) 0%, transparent 30%),
+            radial-gradient(ellipse at center, rgba(100, 100, 100, 0.6) 0%, transparent 45%),
+            radial-gradient(circle at 10% 50%, rgba(130, 130, 130, 0.4) 0%, transparent 25%),
+            radial-gradient(circle at 90% 50%, rgba(130, 130, 130, 0.4) 0%, transparent 25%);
     z-index: 1;
 }
 
+/* Additional atmospheric layer */
+.dashboard-page::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+            radial-gradient(ellipse at top, rgba(130, 130, 130, 0.25) 0%, transparent 40%),
+            radial-gradient(ellipse at bottom, rgba(90, 90, 90, 0.25) 0%, transparent 40%);
+    z-index: 2;
+    mix-blend-mode: screen;
+    animation: breathe 10s ease-in-out infinite;
+}
+
 .auth-container, .dashboard-container {
-    background: rgba(18, 18, 18, 0.9);
+    background:
+            linear-gradient(135deg, rgba(139, 0, 0, 0.06) 0%, rgba(100, 100, 100, 0.08) 100%),
+            linear-gradient(180deg, rgba(40, 40, 40, 0.95) 0%, rgba(25, 25, 25, 0.95) 100%);
     backdrop-filter: blur(20px);
     border-radius: 16px;
     padding: 3rem;
@@ -369,11 +517,12 @@ main.hero::after {
     text-align: center;
     position: relative;
     z-index: 10;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(100, 100, 100, 0.2);
     box-shadow:
-            0 20px 40px rgba(0, 0, 0, 0.5),
-            0 0 0 1px rgba(255, 255, 255, 0.05),
-            inset 0 0 20px rgba(139, 0, 0, 0.02);
+            0 20px 40px rgba(0, 0, 0, 0.6),
+            0 0 60px rgba(80, 80, 80, 0.2),
+            0 1px 0 rgba(150, 150, 150, 0.1) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.5) inset;
 }
 
 /* Font sizing for auth containers */
@@ -401,18 +550,21 @@ main.hero::after {
 
 .dashboard-container {
     max-width: 600px;
-    background: rgba(18, 18, 18, 0.9);
+    background:
+            linear-gradient(135deg, rgba(139, 0, 0, 0.06) 0%, rgba(100, 100, 100, 0.08) 100%),
+            linear-gradient(180deg, rgba(40, 40, 40, 0.95) 0%, rgba(25, 25, 25, 0.95) 100%);
     backdrop-filter: blur(20px);
     border-radius: 16px;
     padding: 3rem;
     text-align: center;
     position: relative;
     z-index: 10;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(100, 100, 100, 0.2);
     box-shadow:
-            0 20px 40px rgba(0, 0, 0, 0.5),
-            0 0 0 1px rgba(255, 255, 255, 0.05),
-            inset 0 0 20px rgba(139, 0, 0, 0.02);
+            0 20px 40px rgba(0, 0, 0, 0.6),
+            0 0 60px rgba(80, 80, 80, 0.2),
+            0 1px 0 rgba(150, 150, 150, 0.1) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.5) inset;
 }
 
 /* Back button styling */
@@ -420,18 +572,33 @@ main.hero::after {
     position: absolute;
     top: 2rem;
     left: 2rem;
-    background: rgba(255, 255, 255, 0.05);
-    color: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: linear-gradient(180deg,
+    rgba(70, 70, 70, 0.9) 0%,
+    rgba(50, 50, 50, 0.9) 50%,
+    rgba(40, 40, 40, 0.9) 100%);
+    color: rgba(255, 255, 255, 0.9);
+    border: 1px solid rgba(100, 100, 100, 0.3);
     padding: 8px 16px;
     font-size: 0.875rem;
     z-index: 20;
+    text-shadow: 0 1px 0 rgba(0, 0, 0, 0.5);
+    box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.1) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.3) inset,
+            0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .back-button:hover {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(255, 255, 255, 0.15);
+    background: linear-gradient(180deg,
+    rgba(80, 80, 80, 0.9) 0%,
+    rgba(60, 60, 60, 0.9) 50%,
+    rgba(50, 50, 50, 0.9) 100%);
+    border-color: rgba(120, 120, 120, 0.4);
     color: #ffffff;
+    box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.15) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+            0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 /* Auth form styles */
@@ -443,7 +610,9 @@ main.hero::after {
 }
 
 .auth-form input {
-    background: rgba(255, 255, 255, 0.05);
+    background: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    rgba(255, 255, 255, 0.04) 100%);
     border: 1px solid rgba(255, 255, 255, 0.1);
     color: #ffffff;
     padding: 12px 16px;
@@ -452,6 +621,9 @@ main.hero::after {
     font-family: inherit;
     outline: none;
     transition: all 0.2s ease;
+    box-shadow:
+            0 1px 0 rgba(0, 0, 0, 0.3) inset,
+            0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .auth-form input::placeholder {
@@ -459,26 +631,41 @@ main.hero::after {
 }
 
 .auth-form input:focus {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: #8B0000;
-    box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.3);
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(150, 150, 150, 0.5);
+    box-shadow:
+            0 0 0 2px rgba(100, 100, 100, 0.3),
+            0 0 10px rgba(150, 150, 150, 0.2);
 }
 
 /* Primary button (submit) */
 .btn-primary {
-    background: #B22222;
+    background: linear-gradient(180deg,
+    #B22222 0%,
+    #8B0000 50%,
+    #690000 100%);
     color: #ffffff;
-    border: 1px solid #B22222;
+    border: 1px solid rgba(178, 34, 34, 0.8);
     font-weight: 500;
     padding: 12px 28px;
     margin-top: 0.5rem;
-    box-shadow: 0 4px 15px rgba(178, 34, 34, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow:
+            0 1px 0 rgba(255, 100, 100, 0.3) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+            0 2px 8px rgba(139, 0, 0, 0.4);
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: #DC143C;
-    border-color: #DC143C;
-    box-shadow: 0 6px 20px rgba(220, 20, 60, 0.4);
+    background: linear-gradient(180deg,
+    #DC143C 0%,
+    #B22222 50%,
+    #8B0000 100%);
+    border-color: rgba(220, 20, 60, 0.8);
+    box-shadow:
+            0 1px 0 rgba(255, 120, 120, 0.4) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+            0 2px 10px rgba(220, 20, 60, 0.5);
 }
 
 .btn-primary:disabled {
@@ -495,12 +682,12 @@ main.hero::after {
     font-size: 0.875rem;
     text-decoration: none;
     font-weight: 500;
+    transition: all 0.15s ease;
 }
 
 .btn-secondary:hover {
     color: rgba(255, 255, 255, 0.9);
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    text-decoration: none;
 }
 
 /* Message display */
@@ -508,14 +695,17 @@ main.hero::after {
     margin-top: 1rem;
     padding: 12px 16px;
     border-radius: 8px;
-    background: rgba(139, 0, 0, 0.1);
-    border: 1px solid rgba(220, 20, 60, 0.3);
+    background: rgba(100, 100, 100, 0.15);
+    border: 1px solid rgba(150, 150, 150, 0.3);
     color: rgba(255, 255, 255, 0.9);
     position: relative;
     display: flex;
     align-items: center;
     justify-content: space-between;
     font-size: 0.875rem;
+    box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.05) inset,
+            0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .message__close {
@@ -551,6 +741,7 @@ main {
     margin: 0 auto;
     min-height: calc(100vh - 80px);
     position: relative;
+    background: #141414;
 }
 
 h1 {
@@ -577,7 +768,10 @@ p {
 
 button {
     padding: 12px 28px;
-    background: #B22222;
+    background: linear-gradient(180deg,
+    #B22222 0%,
+    #8B0000 50%,
+    #690000 100%);
     color: white;
     border: none;
     border-radius: 8px;
@@ -586,14 +780,23 @@ button {
     transition: all 0.15s ease;
     font-family: inherit;
     font-size: 0.875rem;
-    text-shadow: none;
-    box-shadow: 0 4px 15px rgba(178, 34, 34, 0.3);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow:
+            0 1px 0 rgba(255, 100, 100, 0.3) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+            0 2px 8px rgba(139, 0, 0, 0.4);
 }
 
 button:hover {
-    background: #DC143C;
-    text-shadow: none;
-    box-shadow: 0 6px 20px rgba(220, 20, 60, 0.4);
+    background: linear-gradient(180deg,
+    #DC143C 0%,
+    #B22222 50%,
+    #8B0000 100%);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    box-shadow:
+            0 1px 0 rgba(255, 120, 120, 0.4) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.5) inset,
+            0 2px 10px rgba(220, 20, 60, 0.5);
 }
 
 /* Divider for auth pages */

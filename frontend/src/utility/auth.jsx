@@ -176,24 +176,32 @@ export const showMessage = (messageText, setMessage, duration = 4000) => {
 }
 
 // ********************************* QR routing ********************************* //
+import { io } from 'socket.io-client'
 
 export const connectWebSocket = (onStatusChange) => {
 
-    //try to create websocket
-    const ws = new WebSocket('ws://localhost:5001/ws');
+    // Connect to SocketIO server (not raw WebSocket)
+    const socket = io('http://localhost:5001', {
+        transports: ['websocket', 'polling']
+    });
 
-    //if websocket is successful
-    ws.onopen = () => {
-        console.log('WebSocket connected');
-        onStatusChange('connected', ws); };
+    // When connection is successful
+    socket.on('connect', () => {
+        console.log('SocketIO connected:', socket.id);
+        onStatusChange('connected', socket);
+    });
 
-    //if websocket is not successful
-    ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        onStatusChange('error', null);};
+    // When connection fails
+    socket.on('connect_error', (error) => {
+        console.error('SocketIO connection error:', error);
+        onStatusChange('error', null);
+    });
 
-    //if websocket closes
-    ws.onclose = () => { onStatusChange('disconnected', null);};
+    // When connection closes
+    socket.on('disconnect', (reason) => {
+        console.log('SocketIO disconnected:', reason);
+        onStatusChange('disconnected', null);
+    });
 
-    return ws;
-}
+    return socket;
+};
