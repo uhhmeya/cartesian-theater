@@ -1,16 +1,14 @@
-#noinspection PyUnresolvedReferences
 from flask import Flask
-#noinspection PyUnresolvedReferences
 from flask_cors import CORS
-#noinspection PyUnresolvedReferences
 from datetime import timedelta
-
+from flask_socketio import SocketIO
 from src.auth.auth import auth
-from src.misc.extensions import db, bcrypt, jwt
+from src.misc.extensions import db, bcrypt, jwt, socketio
 
 
 app = Flask(__name__)
 CORS(app)
+socketio.init_app(app, cors_allowed_origins="*")
 
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
@@ -34,4 +32,4 @@ def root():
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
-    app.run(debug=True, host='127.0.0.1', port=5001)
+    socketio.run(app, debug=True, host='127.0.0.1', port=5001)

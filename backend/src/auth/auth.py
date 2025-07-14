@@ -1,13 +1,7 @@
-# noinspection PyUnresolvedReferences
 from flask import Blueprint, request, jsonify
-# noinspection PyUnresolvedReferences
-from src.auth.utility import checkCredentials, checkFormat, addUser
-# noinspection PyUnresolvedReferences
 from src.misc.models import User
-# noinspection PyUnresolvedReferences
-from src.auth.utility import extractRefreshToken, validateRefreshToken, createNewAccessToken
-# noinspection PyUnresolvedReferences
-from src.auth.utility import verifyAccessToken, displayUsers
+from src.auth.utility import extractRefreshToken, validateRefreshToken, createNewAccessToken, verifyAccessToken, displayUsers, checkCredentials, checkFormat, addUser
+from src.misc.extensions import socketio
 
 
 

@@ -174,3 +174,26 @@ export const showMessage = (messageText, setMessage, duration = 4000) => {
     setMessage(messageText)
     setTimeout(() => setMessage(''), duration)
 }
+
+// ********************************* QR routing ********************************* //
+
+export const connectWebSocket = (onStatusChange) => {
+
+    //try to create websocket
+    const ws = new WebSocket('ws://localhost:5001/ws');
+
+    //if websocket is successful
+    ws.onopen = () => {
+        console.log('WebSocket connected');
+        onStatusChange('connected', ws); };
+
+    //if websocket is not successful
+    ws.onerror = (error) => {
+        console.error('WebSocket error:', error);
+        onStatusChange('error', null);};
+
+    //if websocket closes
+    ws.onclose = () => { onStatusChange('disconnected', null);};
+
+    return ws;
+}

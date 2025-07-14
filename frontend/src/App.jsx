@@ -3,10 +3,26 @@ import Homepage from './pages/Homepage.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Dashboard from './pages/dashboard.jsx'
+import { useEffect, useState } from 'react'
 import './App.css'
+import {connectWebSocket} from "./utility/auth.jsx";
 
 
 function App() {
+
+    const [ws, setWs] = useState(null);
+    const [wsStatus, setWsStatus] = useState('connecting');
+
+    useEffect(() => {
+        const websocket = connectWebSocket((status, socket) => {
+            setWsStatus(status);
+            setWs(socket);
+        });
+        return () => websocket.close();
+    }, []);
+
+
+
     return (
         <Router>
             <Routes>

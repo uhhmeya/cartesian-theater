@@ -1,10 +1,9 @@
-# noinspection PyUnresolvedReferences
 from flask_sqlalchemy import SQLAlchemy
-# noinspection PyUnresolvedReferences
 from flask_bcrypt import Bcrypt
-# noinspection PyUnresolvedReferences
 from flask_jwt_extended import JWTManager
+from flask_socketio import SocketIO
 
 db = SQLAlchemy()
 bcrypt = Bcrypt()
 jwt = JWTManager()
+socketio = SocketIO()

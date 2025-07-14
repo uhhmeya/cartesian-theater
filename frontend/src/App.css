@@ -12,10 +12,15 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Helvetica Neue', sans-serif;
-    background-color: #000000;
+    background-color: #0a0a0a;  /* Very dark, almost black */
     color: #ffffff;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Subtle grid pattern overlay */
+    background-image:
+            linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px);
+    background-size: 50px 50px;
 }
 
 /* =============================================
@@ -23,12 +28,12 @@ body {
    ============================================= */
 @keyframes pulse {
     0%, 100% {
-        opacity: 0.8;
+        opacity: 0.6;
         transform: translate(-50%, -50%) scale(1);
     }
     50% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1.1);
+        opacity: 0.8;
+        transform: translate(-50%, -50%) scale(1.05);
     }
 }
 
@@ -38,17 +43,17 @@ body {
    NAVBAR STYLES
    ============================================= */
 header {
-    background: linear-gradient(180deg, rgba(0, 0, 0, 0.98) 0%, rgba(0, 0, 0, 0.95) 100%);
+    background: rgba(18, 18, 18, 0.95);
     backdrop-filter: blur(20px) saturate(180%);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     padding: 1.25rem 0;
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
 }
 
-/* Neon glow effect at bottom of navbar */
+/* Subtle glow effect at bottom of navbar */
 header::after {
     content: '';
     position: absolute;
@@ -58,15 +63,15 @@ header::after {
     height: 1px;
     background: linear-gradient(90deg,
     transparent 0%,
-    rgba(138, 43, 226, 0.8) 30%,
-    rgba(100, 149, 237, 0.9) 50%,
-    rgba(138, 43, 226, 0.8) 70%,
+    rgba(139, 0, 0, 0.5) 30%,
+    rgba(178, 34, 34, 0.6) 50%,
+    rgba(139, 0, 0, 0.5) 70%,
     transparent 100%);
     filter: blur(0.5px);
     z-index: 101;
 }
 
-/* Additional glow shadow */
+/* Additional glow shadow - more subtle */
 header::before {
     content: '';
     position: absolute;
@@ -76,8 +81,8 @@ header::before {
     height: 4px;
     background: linear-gradient(90deg,
     transparent 0%,
-    rgba(138, 43, 226, 0.3) 40%,
-    rgba(100, 149, 237, 0.3) 60%,
+    rgba(139, 0, 0, 0.2) 40%,
+    rgba(178, 34, 34, 0.2) 60%,
     transparent 100%);
     filter: blur(12px);
     z-index: 100;
@@ -123,9 +128,9 @@ header button {
     outline: none;
 }
 
-/* Sign In Button - Dark Gray */
+/* Sign In Button - Dark with subtle border */
 .nav-signin {
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.05);
     color: rgba(255, 255, 255, 0.9);
     border: 1px solid rgba(255, 255, 255, 0.1);
     text-shadow: none;
@@ -133,33 +138,33 @@ header button {
 }
 
 .nav-signin:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.15);
     color: #ffffff;
     box-shadow: none;
 }
 
-/* Sign Up Button - White */
+/* Sign Up Button - Dark red */
 .nav-signup {
-    background: #ffffff;
-    color: #000000;
-    border: 1px solid #ffffff;
+    background: #B22222;
+    color: #ffffff;
+    border: 1px solid #B22222;
     font-weight: 450;
     text-shadow: none;
-    box-shadow: none;
+    box-shadow: 0 2px 10px rgba(178, 34, 34, 0.3);
 }
 
 .nav-signup:hover {
-    background: #f0f0f0;
-    border-color: #f0f0f0;
-    box-shadow: none;
+    background: #DC143C;
+    border-color: #DC143C;
+    box-shadow: 0 4px 15px rgba(220, 20, 60, 0.4);
 }
 
 /* =============================================
    HERO SECTION STYLES
    ============================================= */
 main.hero {
-    background: #000000;
+    background: #0a0a0a;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -171,23 +176,55 @@ main.hero {
     overflow: hidden;
 }
 
-/* Purple Glow Effect */
+/* Gray fog/mist effect background */
+main.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+            radial-gradient(ellipse at top left, rgba(139, 0, 0, 0.05) 0%, transparent 40%),
+            radial-gradient(ellipse at bottom right, rgba(50, 50, 50, 0.1) 0%, transparent 40%),
+            radial-gradient(circle at center, rgba(30, 30, 30, 0.3) 0%, transparent 60%);
+    z-index: 1;
+}
+
+/* Additional atmospheric fog layers */
+main.hero::after {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    right: -50%;
+    bottom: -50%;
+    background:
+            radial-gradient(circle at 20% 80%, rgba(60, 60, 60, 0.2) 0%, transparent 50%),
+            radial-gradient(circle at 80% 20%, rgba(40, 40, 40, 0.15) 0%, transparent 50%);
+    transform: rotate(45deg);
+    z-index: 0;
+    opacity: 0.6;
+}
+
+/* Dark Red Glow Effect - Very subtle */
 .purple-glow {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 500px;
-    height: 500px;
+    width: 800px;
+    height: 800px;
     background: radial-gradient(circle,
-    rgba(138, 43, 226, 0.5) 0%,
-    rgba(138, 43, 226, 0.3) 30%,
-    rgba(138, 43, 226, 0.1) 50%,
+    rgba(139, 0, 0, 0.15) 0%,
+    rgba(139, 0, 0, 0.08) 20%,
+    rgba(60, 60, 60, 0.05) 40%,
     transparent 70%
     );
     z-index: 1;
     pointer-events: none;
-    animation: pulse 4s ease-in-out infinite;
+    animation: pulse 8s ease-in-out infinite;
+    filter: blur(40px);
 }
 
 .hero-content {
@@ -197,6 +234,14 @@ main.hero {
     z-index: 10;
     text-align: center;
     position: relative;
+    background: rgba(20, 20, 20, 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 24px;
+    padding: 4rem 3rem;
+    box-shadow:
+            0 20px 40px rgba(0, 0, 0, 0.5),
+            inset 0 0 20px rgba(139, 0, 0, 0.05);
 }
 
 .hero-content h1 {
@@ -206,15 +251,16 @@ main.hero {
     letter-spacing: -0.03em;
     line-height: 1.1;
     font-stretch: condensed;
-    text-shadow: 0 0 30px rgba(138, 43, 226, 0.5);
+    color: #ffffff;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 .hero-content p {
     font-size: 1.125rem;
     margin-bottom: 2rem;
-    color: rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.7);
     font-weight: 400;
-    text-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .hero-buttons {
@@ -224,48 +270,48 @@ main.hero {
     margin-top: 2.5rem;
 }
 
-/* Get Started button - Solid white */
+/* Get Started button - Dark red primary */
 .hero-buttons button:first-child {
-    background: #ffffff;
-    border: 1px solid #ffffff;
-    color: #000000;
+    background: #B22222;
+    border: 1px solid #B22222;
+    color: #ffffff;
     padding: 12px 28px;
     font-weight: 500;
     font-size: 0.875rem;
-    box-shadow: 0 0 25px rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 15px rgba(178, 34, 34, 0.4);
 }
 
 .hero-buttons button:first-child:hover {
-    background: rgba(255, 255, 255, 0.95);
-    border-color: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 0 30px rgba(255, 255, 255, 0.4);
+    background: #DC143C;
+    border-color: #DC143C;
+    box-shadow: 0 6px 20px rgba(220, 20, 60, 0.5);
 }
 
-/* Learn More button - Dark transparent with subtle border */
+/* Learn More button - Glass morphism with red accent */
 .hero-buttons button:last-child {
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(255, 255, 255, 0.05);
     color: rgba(255, 255, 255, 0.9);
     font-weight: 450;
     padding: 12px 28px;
-    border: 1px solid rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     font-size: 0.875rem;
     backdrop-filter: blur(20px);
-    box-shadow: 0 0 20px rgba(138, 43, 226, 0.2);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 .hero-buttons button:last-child:hover {
-    background: rgba(0, 0, 0, 0.5);
-    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
     color: #ffffff;
-    box-shadow: 0 0 25px rgba(138, 43, 226, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* =============================================
    AUTH PAGES STYLES
    ============================================= */
-.auth-page, .dashboard-page {
+.auth-page {
     min-height: 100vh;
-    background: #000000;
+    background: #0a0a0a;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -273,8 +319,48 @@ main.hero {
     overflow: hidden;
 }
 
+/* Gray fog effect for auth pages */
+.auth-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+            radial-gradient(circle at 30% 30%, rgba(50, 50, 50, 0.2) 0%, transparent 50%),
+            radial-gradient(circle at 70% 70%, rgba(40, 40, 40, 0.2) 0%, transparent 50%),
+            radial-gradient(ellipse at center, rgba(30, 30, 30, 0.3) 0%, transparent 70%);
+    z-index: 1;
+}
+
+.dashboard-page {
+    min-height: 100vh;
+    background: #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Gray fog effect for dashboard page */
+.dashboard-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background:
+            radial-gradient(circle at 30% 30%, rgba(50, 50, 50, 0.2) 0%, transparent 50%),
+            radial-gradient(circle at 70% 70%, rgba(40, 40, 40, 0.2) 0%, transparent 50%),
+            radial-gradient(ellipse at center, rgba(30, 30, 30, 0.3) 0%, transparent 70%);
+    z-index: 1;
+}
+
 .auth-container, .dashboard-container {
-    background: rgba(0, 0, 0, 0.85);  /* Brighter, more translucent */
+    background: rgba(18, 18, 18, 0.9);
     backdrop-filter: blur(20px);
     border-radius: 16px;
     padding: 3rem;
@@ -283,49 +369,50 @@ main.hero {
     text-align: center;
     position: relative;
     z-index: 10;
-    /* Constant gradient border - no animation */
-    background-image:
-            linear-gradient(rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.85)),
-            linear-gradient(135deg,
-            rgba(138, 43, 226, 0.6) 0%,
-            rgba(100, 149, 237, 0.6) 25%,
-            rgba(138, 43, 226, 0.6) 50%,
-            rgba(100, 149, 237, 0.6) 75%,
-            rgba(138, 43, 226, 0.6) 100%
-            );
-    background-origin: border-box;
-    background-clip: padding-box, border-box;
-    border: 2px solid transparent;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     box-shadow:
-            0 0 30px rgba(138, 43, 226, 0.2),  /* Reduced glow */
-            0 0 60px rgba(100, 149, 237, 0.15),
-            0 4px 20px rgba(0, 0, 0, 0.5),
-            inset 0 0 15px rgba(138, 43, 226, 0.05);
+            0 20px 40px rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 0 20px rgba(139, 0, 0, 0.02);
 }
 
-/* Unique font sizing for auth containers */
+/* Font sizing for auth containers */
 .auth-container h1, .dashboard-container h1 {
     font-size: 2rem;
     margin-bottom: 0.5rem;
     font-weight: 700;
     letter-spacing: -0.02em;
-    text-shadow: 0 0 20px rgba(138, 43, 226, 0.5);
+    color: #ffffff;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .auth-container h2, .dashboard-container h2 {
     font-size: 1.25rem;
     margin-bottom: 1.5rem;
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.7);
 }
 
 .auth-container p, .dashboard-container p {
     font-size: 1rem;
     line-height: 1.6;
+    color: rgba(255, 255, 255, 0.6);
 }
 
 .dashboard-container {
     max-width: 600px;
+    background: rgba(18, 18, 18, 0.9);
+    backdrop-filter: blur(20px);
+    border-radius: 16px;
+    padding: 3rem;
+    text-align: center;
+    position: relative;
+    z-index: 10;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow:
+            0 20px 40px rgba(0, 0, 0, 0.5),
+            0 0 0 1px rgba(255, 255, 255, 0.05),
+            inset 0 0 20px rgba(139, 0, 0, 0.02);
 }
 
 /* Back button styling */
@@ -333,8 +420,8 @@ main.hero {
     position: absolute;
     top: 2rem;
     left: 2rem;
-    background: rgba(255, 255, 255, 0.08);
-    color: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.05);
+    color: rgba(255, 255, 255, 0.7);
     border: 1px solid rgba(255, 255, 255, 0.1);
     padding: 8px 16px;
     font-size: 0.875rem;
@@ -342,7 +429,7 @@ main.hero {
 }
 
 .back-button:hover {
-    background: rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
     border-color: rgba(255, 255, 255, 0.15);
     color: #ffffff;
 }
@@ -368,28 +455,30 @@ main.hero {
 }
 
 .auth-form input::placeholder {
-    color: rgba(255, 255, 255, 0.5);
+    color: rgba(255, 255, 255, 0.4);
 }
 
 .auth-form input:focus {
     background: rgba(255, 255, 255, 0.08);
-    border-color: rgba(138, 43, 226, 0.5);
-    box-shadow: 0 0 0 2px rgba(138, 43, 226, 0.2);
+    border-color: #8B0000;
+    box-shadow: 0 0 0 2px rgba(139, 0, 0, 0.3);
 }
 
 /* Primary button (submit) */
 .btn-primary {
-    background: #ffffff;
-    color: #000000;
-    border: 1px solid #ffffff;
+    background: #B22222;
+    color: #ffffff;
+    border: 1px solid #B22222;
     font-weight: 500;
     padding: 12px 28px;
     margin-top: 0.5rem;
+    box-shadow: 0 4px 15px rgba(178, 34, 34, 0.3);
 }
 
 .btn-primary:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+    background: #DC143C;
+    border-color: #DC143C;
+    box-shadow: 0 6px 20px rgba(220, 20, 60, 0.4);
 }
 
 .btn-primary:disabled {
@@ -400,17 +489,18 @@ main.hero {
 /* Secondary button (switch auth mode) */
 .btn-secondary {
     background: transparent;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(255, 255, 255, 0.6);
     border: none;
     padding: 12px 28px;
     font-size: 0.875rem;
-    text-decoration: underline;
-    text-underline-offset: 3px;
+    text-decoration: none;
+    font-weight: 500;
 }
 
 .btn-secondary:hover {
-    color: #ffffff;
+    color: rgba(255, 255, 255, 0.9);
     text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 /* Message display */
@@ -418,8 +508,8 @@ main.hero {
     margin-top: 1rem;
     padding: 12px 16px;
     border-radius: 8px;
-    background: rgba(138, 43, 226, 0.1);
-    border: 1px solid rgba(138, 43, 226, 0.3);
+    background: rgba(139, 0, 0, 0.1);
+    border: 1px solid rgba(220, 20, 60, 0.3);
     color: rgba(255, 255, 255, 0.9);
     position: relative;
     display: flex;
@@ -447,23 +537,9 @@ main.hero {
     color: #ffffff;
 }
 
-/* Auth page background glow */
+/* Remove auth page background glow for cleaner look */
 .auth-glow {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    width: 600px;
-    height: 600px;
-    background: radial-gradient(circle,
-    rgba(138, 43, 226, 0.2) 0%,
-    rgba(138, 43, 226, 0.1) 30%,
-    rgba(138, 43, 226, 0.05) 50%,
-    transparent 70%
-    );
-    z-index: 1;
-    pointer-events: none;
-    animation: pulse 4s ease-in-out infinite;
+    display: none;
 }
 
 /* =============================================
@@ -480,27 +556,28 @@ main {
 h1 {
     font-size: 2.5rem;
     margin-bottom: 1rem;
-    color: #ffffff;
+    color: #1d1d1f;
     font-weight: 700;
     letter-spacing: -0.02em;
     line-height: 1.1;
-    text-shadow: 0 0 20px rgba(138, 43, 226, 0.3);
+    text-shadow: none;
 }
 
 h2 {
     font-size: 1.8rem;
     margin-bottom: 0.8rem;
+    color: #1d1d1f;
 }
 
 p {
     margin-bottom: 1rem;
-    color: rgba(255, 255, 255, 0.7);
+    color: rgba(0, 0, 0, 0.7);
     text-shadow: none;
 }
 
 button {
     padding: 12px 28px;
-    background: #3b82f6;
+    background: #B22222;
     color: white;
     border: none;
     border-radius: 8px;
@@ -510,13 +587,36 @@ button {
     font-family: inherit;
     font-size: 0.875rem;
     text-shadow: none;
-    box-shadow: none;
+    box-shadow: 0 4px 15px rgba(178, 34, 34, 0.3);
 }
 
 button:hover {
-    background: #2563eb;
+    background: #DC143C;
     text-shadow: none;
-    box-shadow: none;
+    box-shadow: 0 6px 20px rgba(220, 20, 60, 0.4);
+}
+
+/* Divider for auth pages */
+.auth-divider {
+    margin: 1.5rem 0;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.auth-divider span {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 /* =============================================
