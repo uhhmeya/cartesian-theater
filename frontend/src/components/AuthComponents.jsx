@@ -8,7 +8,9 @@ function AuthForm({ onSubmit, submitText, isLoading = false }) {
 
     const handleSubmit = (e) => {
         e.preventDefault()
-        onSubmit({ user, password })
+        if (!isLoading) {
+            onSubmit({ user, password })
+        }
     }
 
     return (
@@ -19,6 +21,7 @@ function AuthForm({ onSubmit, submitText, isLoading = false }) {
                 value={user}
                 onChange={(e) => setUser(e.target.value)}
                 required
+                disabled={isLoading}
             />
             <input
                 type="password"
@@ -26,9 +29,10 @@ function AuthForm({ onSubmit, submitText, isLoading = false }) {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
             />
             <button type="submit" className="btn-primary" disabled={isLoading}>
-                {submitText}
+                {isLoading ? 'Loading...' : submitText}
             </button>
         </form>
     )

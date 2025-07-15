@@ -17,8 +17,8 @@ export function TextLogo() {
         <span style={{
             fontSize: '30px',
             fontWeight: 'bold',
-            color: '#00ff88',
-            textShadow: '0 0 10px #00ff88'
+            color: '#dc143c',
+            textShadow: '0 0 10px rgba(220, 20, 60, 0.8)'
         }}>
             CT
         </span>
@@ -166,9 +166,9 @@ export const animationStyles = `
         position: relative;
         display: inline-block;
         filter: 
-            drop-shadow(0 0 8px #00ff88) 
-            drop-shadow(0 0 15px #00ff88)
-            drop-shadow(0 0 25px #00ff88);
+            drop-shadow(0 0 8px #dc143c) 
+            drop-shadow(0 0 15px #dc143c)
+            drop-shadow(0 0 25px #dc143c);
         animation: glitchAnim 3s infinite;
         transition: all 0.3s ease;
         cursor: pointer;
@@ -232,9 +232,9 @@ export const animationStyles = `
     .logo-glitch:hover {
         animation-duration: 1s;
         filter: 
-            drop-shadow(0 0 10px #00ff88) 
-            drop-shadow(0 0 20px #00ff88)
-            drop-shadow(0 0 30px #00ff88);
+            drop-shadow(0 0 10px #dc143c) 
+            drop-shadow(0 0 20px #dc143c)
+            drop-shadow(0 0 30px #dc143c);
     }
 
     .spark {

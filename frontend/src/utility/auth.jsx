@@ -1,5 +1,3 @@
-// ********************************* API Request Helpers ********************************* //
-
 const getNewAccessToken = async () => {
     const refreshToken = getRefreshToken();
     if (!refreshToken) return null;
@@ -20,20 +18,16 @@ const retryApiRequest = async (endpoint, payload) => {
     return apiRequest(endpoint, payload, true);
 };
 
-// ********************************* apiRequest ********************************* //
-
 export async function apiRequest(endpoint, payload, isRetry = false) {
-
     try {
-        //if access token exists, put it on the header
         const accessToken = getAccessToken();
         const headers = { 'Content-Type': 'application/json' };
         if (accessToken) headers['Authorization'] = `Bearer ${accessToken}`;
 
-        //sends api request
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
-        const proxyEndpoint = endpoint.replace('http://localhost:5001', '/api');
+        const proxyEndpoint = endpoint.replace('http://localhost:5001', '/api').replace('http://127.0.0.1:5001', '/api');
+
         const response = await fetch(proxyEndpoint, {
             method: 'POST',
             headers: headers,
@@ -41,14 +35,14 @@ export async function apiRequest(endpoint, payload, isRetry = false) {
             signal: controller.signal
         });
         clearTimeout(timeoutId);
+
         const responseData = await response.json();
 
-        //if access token is expired, get new access token and retry
-        if (response.status === 401 && !isRetry && endpoint !== '/api/refresh') {
+        // Don't redirect on 401 if this is signin or signup endpoint
+        if (response.status === 401 && !isRetry && !endpoint.includes('/signin') && !endpoint.includes('/signup') && endpoint !== '/api/refresh') {
             const newToken = await getNewAccessToken();
             if (newToken) return await retryApiRequest(endpoint, payload);
 
-            // Couldn't get new token - clear everything and redirect to login
             clearTokens();
             window.location.href = '/login';
             return {
@@ -76,7 +70,6 @@ export async function apiRequest(endpoint, payload, isRetry = false) {
         };
 
     } catch (err) {
-        // Check if it was a timeout
         if (err.name === 'AbortError') {
             return {
                 success: false,
@@ -93,8 +86,6 @@ export async function apiRequest(endpoint, payload, isRetry = false) {
         };
     }
 }
-
-// ********************************* Token Management ********************************* //
 
 export const saveTokens = (accessToken, refreshToken) => {
     localStorage.setItem('access_token', accessToken);
@@ -118,24 +109,18 @@ export const isLoggedIn = () => {
     return getAccessToken() !== null && getRefreshToken() !== null;
 };
 
-// Check if token is expired (optional - use if you want to be proactive)
 export const isTokenExpired = (token) => {
     if (!token) return true;
 
     try {
-        // JWT structure: header.payload.signature
         const payload = JSON.parse(atob(token.split('.')[1]));
-        // exp is in seconds, Date.now() is in milliseconds
         return payload.exp * 1000 < Date.now();
     } catch {
         return true;
     }
 };
 
-// ********************************* Error Map ********************************* //
-
 export const errorMap = {
-    // Error messages
     bad_format: {
         label: "Bad Format",
         useServerMessage: true
@@ -152,8 +137,6 @@ export const errorMap = {
     timeout_error: {
         label: "Request timed out"
     },
-
-    // Success messages
     signin: {
         label: "Login successful"
     },
@@ -161,8 +144,6 @@ export const errorMap = {
         label: "Account created successfully"
     }
 };
-
-// ********************************* Message Helpers ********************************* //
 
 export const getErrorMessage = (response) => {
     return response.errorType === 'bad_format'
@@ -175,29 +156,23 @@ export const showMessage = (messageText, setMessage, duration = 4000) => {
     setTimeout(() => setMessage(''), duration)
 }
 
-// ********************************* QR routing ********************************* //
 import { io } from 'socket.io-client'
 
 export const connectWebSocket = (onStatusChange) => {
-
-    // Connect to SocketIO server (not raw WebSocket)
     const socket = io('http://localhost:5001', {
         transports: ['websocket', 'polling']
     });
 
-    // When connection is successful
     socket.on('connect', () => {
         console.log('SocketIO connected:', socket.id);
         onStatusChange('connected', socket);
     });
 
-    // When connection fails
     socket.on('connect_error', (error) => {
         console.error('SocketIO connection error:', error);
         onStatusChange('error', null);
     });
 
-    // When connection closes
     socket.on('disconnect', (reason) => {
         console.log('SocketIO disconnected:', reason);
         onStatusChange('disconnected', null);

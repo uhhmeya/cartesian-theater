@@ -1,9 +1,5 @@
-/* Import Inter font - MUST BE FIRST */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap');
 
-/* =============================================
-   GLOBAL STYLES & RESET
-   ============================================= */
 * {
     margin: 0;
     padding: 0;
@@ -12,20 +8,16 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', 'Helvetica Neue', sans-serif;
-    background-color: #0a0a0a;  /* Slightly lighter black */
+    background-color: #0a0a0a;
     color: #ffffff;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    /* Red grid pattern overlay */
     background-image:
             linear-gradient(rgba(139, 0, 0, 0.05) 1px, transparent 1px),
             linear-gradient(90deg, rgba(139, 0, 0, 0.05) 1px, transparent 1px);
     background-size: 50px 50px, 50px 50px;
 }
 
-/* =============================================
-   ANIMATIONS
-   ============================================= */
 @keyframes pulse {
     0%, 100% {
         opacity: 0.6;
@@ -37,11 +29,6 @@ body {
     }
 }
 
-
-
-/* =============================================
-   NAVBAR STYLES
-   ============================================= */
 header {
     background: linear-gradient(180deg,
     rgba(20, 0, 0, 0.98) 0%,
@@ -60,7 +47,6 @@ header {
             0 4px 30px rgba(220, 20, 60, 0.3);
 }
 
-/* Dark red glow effect at bottom of navbar */
 header::after {
     content: '';
     position: absolute;
@@ -78,7 +64,6 @@ header::after {
     z-index: 101;
 }
 
-/* Additional dark red shadow */
 header::before {
     content: '';
     position: absolute;
@@ -106,7 +91,6 @@ header .container {
     overflow: hidden;
 }
 
-/* Add subtle red sheen to navbar */
 header .container::before {
     content: '';
     position: absolute;
@@ -132,7 +116,9 @@ header h1 {
     margin: 0;
     color: #ffffff;
     font-weight: 700;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    font-stretch: condensed;
     display: flex;
     align-items: center;
     gap: 0.75rem;
@@ -145,7 +131,6 @@ header nav {
     gap: 0.5rem;
 }
 
-/* Navbar Button Base Styles */
 header button {
     font-family: inherit;
     font-size: 0.875rem;
@@ -161,7 +146,6 @@ header button {
     letter-spacing: 0;
 }
 
-/* Sign In Button - Black with red outline */
 .nav-signin {
     background: linear-gradient(180deg,
     rgba(30, 10, 10, 0.9) 0%,
@@ -191,7 +175,6 @@ header button {
             0 0 20px rgba(220, 20, 60, 0.3);
 }
 
-/* Sign Up Button - Clean solid red */
 .nav-signup {
     background: #7f1d1d;
     color: #ffffff;
@@ -209,9 +192,6 @@ header button {
     transform: none;
 }
 
-/* =============================================
-   HERO SECTION STYLES
-   ============================================= */
 main.hero {
     background: #0a0a0a;
     display: flex;
@@ -225,7 +205,6 @@ main.hero {
     overflow: hidden;
 }
 
-/* Enhanced red fog effect background */
 main.hero::before {
     content: '';
     position: absolute;
@@ -240,7 +219,6 @@ main.hero::before {
     z-index: 1;
 }
 
-/* Additional atmospheric layer - removed */
 main.hero::after {
     display: none;
 }
@@ -251,7 +229,6 @@ main.hero::after {
     66% { transform: rotate(240deg) scale(0.95) translateX(10px); }
 }
 
-/* Subtle Red Glow Effect */
 .purple-glow {
     position: absolute;
     top: 50%;
@@ -316,7 +293,6 @@ main.hero::after {
     margin-top: 2.5rem;
 }
 
-/* Get Started button - Clean solid red */
 .hero-buttons button:first-child {
     background: #7f1d1d;
     border: none;
@@ -336,7 +312,6 @@ main.hero::after {
     transform: none;
 }
 
-/* Learn More button - Clean outline style */
 .hero-buttons button:last-child {
     background: transparent;
     color: rgba(255, 255, 255, 0.9);
@@ -358,9 +333,6 @@ main.hero::after {
     transform: none;
 }
 
-/* =============================================
-   AUTH PAGES STYLES
-   ============================================= */
 .auth-page {
     min-height: 100vh;
     background: #0a0a0a;
@@ -371,7 +343,6 @@ main.hero::after {
     overflow: hidden;
 }
 
-/* Enhanced red fog effect for auth pages */
 .auth-page::before {
     content: '';
     position: absolute;
@@ -386,7 +357,6 @@ main.hero::after {
     z-index: 1;
 }
 
-/* Additional atmospheric layer - removed */
 .auth-page::after {
     display: none;
 }
@@ -406,7 +376,6 @@ main.hero::after {
     overflow: hidden;
 }
 
-/* Enhanced red fog effect for dashboard page */
 .dashboard-page::before {
     content: '';
     position: absolute;
@@ -421,7 +390,6 @@ main.hero::after {
     z-index: 1;
 }
 
-/* Additional atmospheric layer - removed */
 .dashboard-page::after {
     display: none;
 }
@@ -444,7 +412,6 @@ main.hero::after {
             0 0 80px rgba(220, 20, 60, 0.3);
 }
 
-/* Font sizing for auth containers */
 .auth-container h1, .dashboard-container h1 {
     font-size: 2rem;
     margin-bottom: 0.5rem;
@@ -484,7 +451,6 @@ main.hero::after {
             0 0 80px rgba(220, 20, 60, 0.3);
 }
 
-/* Back button styling */
 .back-button {
     position: absolute;
     top: 2rem;
@@ -509,7 +475,6 @@ main.hero::after {
     transform: none;
 }
 
-/* Auth form styles */
 .auth-form {
     display: flex;
     flex-direction: column;
@@ -540,7 +505,11 @@ main.hero::after {
     box-shadow: 0 0 0 3px rgba(220, 20, 60, 0.2);
 }
 
-/* Primary button (submit) */
+.auth-form input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .btn-primary {
     background: #7f1d1d;
     color: #ffffff;
@@ -566,7 +535,6 @@ main.hero::after {
     cursor: not-allowed;
 }
 
-/* Secondary button (switch auth mode) */
 .btn-secondary {
     background: transparent;
     color: rgba(255, 255, 255, 0.7);
@@ -584,7 +552,6 @@ main.hero::after {
     text-decoration: underline;
 }
 
-/* Message display */
 .message {
     margin-top: 1rem;
     padding: 12px 16px;
@@ -598,6 +565,19 @@ main.hero::after {
     justify-content: space-between;
     font-size: 0.875rem;
     box-shadow: none;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-in;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .message__close {
@@ -619,14 +599,10 @@ main.hero::after {
     color: #ffffff;
 }
 
-/* Remove auth page background glow for cleaner look */
 .auth-glow {
     display: none;
 }
 
-/* =============================================
-   BASIC PAGE STYLES
-   ============================================= */
 main {
     padding: 2rem;
     max-width: 1200px;
@@ -680,7 +656,6 @@ button:hover {
     transform: none;
 }
 
-/* Divider for auth pages */
 .auth-divider {
     margin: 1.5rem 0;
     display: flex;
@@ -706,9 +681,6 @@ button:hover {
     letter-spacing: 0.05em;
 }
 
-/* =============================================
-   RESPONSIVE
-   ============================================= */
 @media (max-width: 768px) {
     header .container {
         flex-direction: column;
