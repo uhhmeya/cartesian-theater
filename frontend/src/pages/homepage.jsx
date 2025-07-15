@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { StarryBackground, TextLogo, animationStyles } from '../components/styleComponents'
+import { StarryBackground, TextLogo, animationStyles } from '../components/StyleComponents.jsx'
 import logo from '../../logo.webp'
 
 function Homepage() {

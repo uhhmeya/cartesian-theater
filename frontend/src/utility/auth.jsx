@@ -36,6 +36,15 @@ export async function apiRequest(endpoint, payload, isRetry = false) {
         });
         clearTimeout(timeoutId);
 
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+            return {
+                success: false,
+                message: 'Server error - invalid response format',
+                errorType: 'server_error'
+            };
+        }
+
         const responseData = await response.json();
 
         // Don't redirect on 401 if this is signin or signup endpoint

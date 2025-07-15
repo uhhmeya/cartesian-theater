@@ -1,10 +1,6 @@
-# noinspection PyUnresolvedReferences
 from flask import jsonify
-# noinspection PyUnresolvedReferences
-from src.misc.models import User
-# noinspection PyUnresolvedReferences
+from src.misc import User, bcrypt, db
 import re
-# noinspection PyUnresolvedReferences
 from flask_jwt_extended import create_access_token, create_refresh_token
 from functools import wraps
 
@@ -19,10 +15,6 @@ RESERVED_USERNAMES = {
 }
 
 def checkCredentials(username, password):
-
-    # noinspection PyUnresolvedReferences
-    from src.misc.extensions import bcrypt
-
     if not username or not password:
         return jsonify({
             "message": "Both username and password are required",
@@ -52,7 +44,6 @@ def checkCredentials(username, password):
     }), 200
 
 def checkFormat(username, password):
-
     if not username or not password:
         return jsonify({
             "message": "Both username and password are required",
@@ -194,10 +185,6 @@ def checkFormat(username, password):
     }), 201
 
 def addUser(username, password):
-
-    # noinspection PyUnresolvedReferences
-    from src.misc.extensions import db, bcrypt
-
     username = username.strip().lower()
 
     existing_user = User.query.filter_by(username=username).first()
@@ -220,8 +207,9 @@ def addUser(username, password):
             "username": new_user.username
         }), 201
 
-    except:
+    except Exception as e:
         db.session.rollback()
+        print(f"Error creating user: {e}")  # Log the error for debugging
         return jsonify({
             "message": "Internal server error while creating user",
             "success": False,
@@ -229,12 +217,8 @@ def addUser(username, password):
         }), 500
 
 def verifyAccessToken():
-    # noinspection PyUnresolvedReferences
     from flask import request, jsonify
-    # noinspection PyUnresolvedReferences
     from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
-    # noinspection PyUnresolvedReferences
-    from src.misc.models import User
 
     try:
         # Check if there's a valid JWT token in the request
@@ -264,7 +248,6 @@ def verifyAccessToken():
 
 def extractRefreshToken():
     """Get refresh token from request body"""
-    # noinspection PyUnresolvedReferences
     from flask import request, jsonify
 
     refresh_token = request.get_json().get('refresh_token')
@@ -280,9 +263,7 @@ def extractRefreshToken():
 
 def validateRefreshToken(refresh_token):
     """Check if refresh token is valid and return user_id"""
-    # noinspection PyUnresolvedReferences
     from flask import jsonify
-    # noinspection PyUnresolvedReferences
     from flask_jwt_extended import decode_token
 
     try:
@@ -301,9 +282,7 @@ def validateRefreshToken(refresh_token):
 
 def createNewAccessToken(user_id):
     """Create new access token for user"""
-    # noinspection PyUnresolvedReferences
     from flask import jsonify
-    # noinspection PyUnresolvedReferences
     from flask_jwt_extended import create_access_token
 
     try:
@@ -320,11 +299,7 @@ def createNewAccessToken(user_id):
 
 def displayUsers():
     """Get all users with minimal information for debugging"""
-    # noinspection PyUnresolvedReferences
     from flask import jsonify
-    # noinspection PyUnresolvedReferences
-    from src.misc.models import User
-    # noinspection PyUnresolvedReferences
     from datetime import datetime
 
     try:

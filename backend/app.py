@@ -1,9 +1,8 @@
 from flask import Flask
 from flask_cors import CORS
 from datetime import timedelta
-from flask_socketio import SocketIO
 from src.auth.auth import auth
-from src.misc.extensions import db, bcrypt, jwt, socketio
+from src.misc import db, bcrypt, jwt, socketio
 
 
 app = Flask(__name__)

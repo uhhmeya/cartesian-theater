@@ -1,27 +1,24 @@
 from flask import Blueprint, request, jsonify
 from flask_socketio import emit
-from src.misc.models import User
+from src.misc import User, socketio
 from src.auth.utility import extractRefreshToken, validateRefreshToken, createNewAccessToken, verifyAccessToken, displayUsers, checkCredentials, checkFormat, addUser
-from src.misc.extensions import socketio
 
 
 auth = Blueprint('auth', __name__)
 
-#public endpoint
 @auth.route('/signin', methods=['POST'])
 def signin():
-
-    username = request.get_json().get('user')
-    password = request.get_json().get('password')
+    data = request.get_json()
+    username = data.get('user')
+    password = data.get('password')
 
     return checkCredentials(username, password)
 
-#public endpoint
 @auth.route('/signup', methods=['POST'])
 def signup():
-
-    username = request.get_json().get('user')
-    password = request.get_json().get('password')
+    data = request.get_json()
+    username = data.get('user')
+    password = data.get('password')
 
     format_response = checkFormat(username, password)
     if format_response[1] != 201:
@@ -52,11 +49,9 @@ def refresh():
     }), 200
 
 
-# Add these WebSocket handlers at the bottom of auth.py
 @socketio.on('connect')
 def handle_connect():
     print(f"🔌 Client connected: {request.sid}")
-    # Send welcome message to the connected client
     emit('connection_response', {
         'message': 'Welcome to Cartesian Theater!',
         'session_id': request.sid,
@@ -80,4 +75,3 @@ def list_users():
         "success": True,
         "data": user_data
     }), 200
-

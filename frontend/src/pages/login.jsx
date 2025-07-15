@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthForm, MessageDisplay, BackButton } from '../components/AuthComponents.jsx'
 import { apiRequest, errorMap, getErrorMessage, saveTokens } from '../utility/auth.jsx'
-import { StarryBackground } from '../components/styleComponents'
+import { StarryBackground } from '../components/StyleComponents.jsx'
 
 function Login() {
     const navigate = useNavigate()

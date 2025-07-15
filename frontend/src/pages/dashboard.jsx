@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { BackButton } from '../components/AuthComponents.jsx'
-import { StarryBackground } from '../components/styleComponents'
+import { StarryBackground } from '../components/StyleComponents.jsx'
 import { clearTokens } from '../utility/auth.jsx'
 
 function Dashboard() {
