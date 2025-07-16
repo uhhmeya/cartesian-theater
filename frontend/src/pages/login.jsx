@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthForm, MessageDisplay, BackButton, StarryBackground } from '../helpers/components.jsx'
-import { apiRequest, errorMap, getErrorMessage, saveTokens, useMessage } from '../helpers/utility.jsx'
-
+import { apiRequest, errorMap, getErrorMessage, saveTokens, useMessage, saveUsername } from '../helpers/utility.jsx'
 
 function Login() {
     const navigate = useNavigate()
@@ -24,6 +23,7 @@ function Login() {
             const { access_token, refresh_token } = response.data
             if (access_token && refresh_token) {
                 saveTokens(access_token, refresh_token)
+                saveUsername(user)
             }
 
             showMessage(errorMap.signin.label)
@@ -39,7 +39,6 @@ function Login() {
     return (
         <div className="auth-page">
             <StarryBackground />
-            <div className="auth-glow"></div>
             <BackButton to="/" text="Back to Home" />
 
             <div className="auth-container">

@@ -1,5 +1,4 @@
 import {useState} from "react";
-import { io } from 'socket.io-client'
 
 const getNewAccessToken = async () => {
     const refreshToken = getRefreshToken();
@@ -50,7 +49,6 @@ export async function apiRequest(endpoint, payload, isRetry = false) {
 
         const responseData = await response.json();
 
-        // Don't redirect on 401 if this is signin or signup endpoint
         if (response.status === 401 && !isRetry && !endpoint.includes('/signin') && !endpoint.includes('/signup') && endpoint !== '/api/refresh') {
             const newToken = await getNewAccessToken();
             if (newToken) return await retryApiRequest(endpoint, payload);
@@ -115,6 +113,7 @@ export const getRefreshToken = () => {
 export const clearTokens = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
+    localStorage.removeItem('username');
 };
 
 export const isLoggedIn = () => {
@@ -168,6 +167,8 @@ export const showMessage = (messageText, setMessage, duration = 4000) => {
     setTimeout(() => setMessage(''), duration)
 }
 
+import { io } from 'socket.io-client'
+
 export const connectWebSocket = (onStatusChange) => {
     const token = getAccessToken();
 
@@ -181,6 +182,9 @@ export const connectWebSocket = (onStatusChange) => {
         transports: ['websocket', 'polling'],
         query: {
             token: token
+        },
+        extraHeaders: {
+            Authorization: `Bearer ${token}`
         }
     });
 
@@ -202,7 +206,6 @@ export const connectWebSocket = (onStatusChange) => {
     return socket;
 }
 
-
 export const useMessage = (duration = 5000) => {
     const [message, setMessage] = useState('')
 
@@ -215,42 +218,139 @@ export const useMessage = (duration = 5000) => {
     return [message, showMessage, () => setMessage('')]
 }
 
+export const saveUsername = (username) => {
+    localStorage.setItem('username', username);
+};
+
+export const getUsername = () => {
+    return localStorage.getItem('username') || 'User';
+};
+
 // Mock chat data
 export const mockChannels = [
-    { id: 'general', name: 'General', unread: 3 },
-    { id: 'random', name: 'Random', unread: 0 },
-    { id: 'tech', name: 'Tech Discussion', unread: 7 },
-    { id: 'gaming', name: 'Gaming', unread: 0 },
-    { id: 'announcements', name: 'Announcements', unread: 1 }
+    { id: 'general', name: 'general' },
+    { id: 'random', name: 'random' },
+    { id: 'tech', name: 'tech' },
+    { id: 'gaming', name: 'gaming' }
 ]
 
 export const mockDirectMessages = [
-    { id: 'dm1', name: 'Alice Johnson', status: 'online', unread: 2 },
-    { id: 'dm2', name: 'Bob Smith', status: 'away', unread: 0 },
-    { id: 'dm3', name: 'Charlie Davis', status: 'offline', unread: 0 }
+    { id: 'erik_ai', name: 'erik_ai', isAI: true }
 ]
 
-export const mockMessages = {
-    general: [
-        { id: 1, user: 'System', text: 'Welcome to Cartesian Theater!', time: '10:00 AM', isSystem: true },
-        { id: 2, user: 'Alice Johnson', text: 'Hey everyone! Excited to be here', time: '10:15 AM' },
-        { id: 3, user: 'Bob Smith', text: 'Welcome Alice! This platform is amazing', time: '10:16 AM' },
-        { id: 4, user: 'You', text: 'Hello team!', time: '10:20 AM', isOwn: true }
-    ],
-    random: [
-        { id: 1, user: 'Charlie Davis', text: 'Anyone up for a game tonight?', time: '9:00 PM' },
-        { id: 2, user: 'Alice Johnson', text: 'Count me in!', time: '9:05 PM' }
-    ],
-    tech: [
-        { id: 1, user: 'Bob Smith', text: 'Check out this new encryption algorithm', time: '2:00 PM' },
-        { id: 2, user: 'System', text: 'Link shared: quantum-encryption.pdf', time: '2:01 PM', isSystem: true }
-    ],
-    gaming: [
-        { id: 1, user: 'Charlie Davis', text: 'New game dropped!', time: '3:00 PM' }
-    ],
-    announcements: [
-        { id: 1, user: 'Admin', text: 'Server maintenance scheduled for midnight', time: '1:00 PM' }
-    ]
+export const createWelcomeMessage = (username) => {
+    return {
+        id: Date.now(),
+        user: 'erik_ai',
+        text: `Welcome ${username}!`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isAI: true
+    }
+}
+
+export const createJoinMessage = (username) => {
+    return {
+        id: Date.now() + 1,
+        text: `${username} entered the chat`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isSystem: true
+    }
+}
+
+export const getInitialMessages = (channelId, username) => {
+    const messages = {
+        general: [
+            {
+                id: 1,
+                user: 'Alex Johnson',
+                text: 'Hey everyone! Great to have a secure chat platform',
+                time: '10:15 AM'
+            },
+            {
+                id: 2,
+                user: 'Sarah Chen',
+                text: 'Absolutely! The encryption here is top-notch',
+                time: '10:16 AM'
+            },
+            {
+                id: 3,
+                user: 'Michael Brown',
+                text: 'Has anyone tried the file sharing feature yet?',
+                time: '10:20 AM'
+            },
+            createJoinMessage(username),
+            {
+                id: Date.now() + 2,
+                user: 'erik_ai',
+                text: `Welcome ${username}!`,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isAI: true
+            }
+        ],
+        random: [
+            {
+                id: 1,
+                user: 'Emma Wilson',
+                text: 'Just discovered this amazing coffee shop downtown',
+                time: '9:00 PM'
+            },
+            {
+                id: 2,
+                user: 'David Martinez',
+                text: 'Which one? Always looking for good coffee',
+                time: '9:05 PM'
+            },
+            createJoinMessage(username),
+            {
+                id: Date.now() + 2,
+                user: 'erik_ai',
+                text: `Welcome ${username}!`,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isAI: true
+            }
+        ],
+        tech: [
+            {
+                id: 1,
+                user: 'Lisa Anderson',
+                text: 'New quantum encryption paper just dropped',
+                time: '2:00 PM'
+            },
+            {
+                id: 2,
+                user: 'James Taylor',
+                text: 'Link? That sounds fascinating',
+                time: '2:01 PM'
+            },
+            createJoinMessage(username),
+            {
+                id: Date.now() + 2,
+                user: 'erik_ai',
+                text: `Welcome ${username}!`,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isAI: true
+            }
+        ],
+        gaming: [
+            {
+                id: 1,
+                user: 'Ryan Cooper',
+                text: 'Anyone up for some co-op tonight?',
+                time: '3:00 PM'
+            },
+            createJoinMessage(username),
+            {
+                id: Date.now() + 2,
+                user: 'erik_ai',
+                text: `Welcome ${username}!`,
+                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                isAI: true
+            }
+        ],
+        erik_ai: []
+    }
+
+    return messages[channelId] || [createJoinMessage(username)]
 }
 
 export const getChannelName = (channelId, channels, dms) => {

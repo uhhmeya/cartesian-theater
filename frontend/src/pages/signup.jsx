@@ -1,10 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AuthForm, MessageDisplay, BackButton, StarryBackground } from '../helpers/components.jsx'
-import { apiRequest, errorMap, getErrorMessage } from '../helpers/utility.jsx'
+import { apiRequest, errorMap, getErrorMessage, saveUsername } from '../helpers/utility.jsx'
 
 function Signup() {
-
     const navigate = useNavigate()
     const [message, setMessage] = useState('')
     const [isLoading, setIsLoading] = useState(false)
@@ -47,6 +46,9 @@ function Signup() {
                 return
             }
 
+            // Save username after successful signup
+            saveUsername(user)
+
             setMessage(errorMap.signup.label)
             setTimeout(() => {
                 if (isMountedRef.current) {
@@ -71,7 +73,6 @@ function Signup() {
     return (
         <div className="auth-page">
             <StarryBackground />
-            <div className="auth-glow"></div>
 
             <BackButton to="/" text="Back to Home" />
 

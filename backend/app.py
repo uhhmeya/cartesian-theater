@@ -6,9 +6,15 @@ from src.misc import db, bcrypt, jwt, socketio
 
 
 app = Flask(__name__)
-CORS(app)
-socketio.init_app(app, cors_allowed_origins="*")
 
+CORS(app, origins="*", allow_headers=["Content-Type", "Authorization"], supports_credentials=True)
+
+socketio.init_app(app,
+                  cors_allowed_origins="*",
+                  async_mode='threading',
+                  logger=True,
+                  engineio_logger=True
+                  )
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False

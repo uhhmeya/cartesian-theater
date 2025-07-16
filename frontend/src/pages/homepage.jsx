@@ -1,19 +1,16 @@
 import { useNavigate } from 'react-router-dom'
-import { StarryBackground, TextLogo, animationStyles } from '../helpers/components.jsx'
-import logo from '/logo.webp'
+import { StarryBackground, TextLogo } from '../helpers/components.jsx'
 
 function Homepage() {
     const navigate = useNavigate()
 
     return (
         <div>
-            <style>{animationStyles}</style>
-
             {/* Header */}
             <header>
                 <div className="container">
-                    <h1 className="logo-container">
-                        <TextLogo src={logo} alt="Cartesian Theater" />
+                    <h1>
+                        <TextLogo />
                         Cartesian Theater
                     </h1>
                     <nav>
@@ -29,11 +26,7 @@ function Homepage() {
 
             {/* Hero Section */}
             <main className="hero">
-                {/* Starry Background */}
                 <StarryBackground />
-
-                {/* Purple Glow Center */}
-                <div className="purple-glow"></div>
 
                 <div className="hero-content">
                     <h1>Cartesian Theater.</h1>

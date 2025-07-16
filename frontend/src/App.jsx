@@ -3,13 +3,9 @@ import Homepage from './pages/Homepage.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
 import Dashboard from './pages/dashboard.jsx'
-import { useEffect, useState } from 'react'
 import './App.css'
-import {connectWebSocket} from "./helpers/utility.jsx";
-
 
 function App() {
-
     return (
         <Router>
             <Routes>

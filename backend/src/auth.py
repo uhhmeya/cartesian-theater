@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
-from flask_socketio import emit
+from flask_socketio import emit, disconnect
 from src.misc import User, socketio
-from src.utility import extractRefreshToken, validateRefreshToken, createNewAccessToken, verifyAccessToken, displayUsers, checkCredentials, checkFormat, addUser
+from src.utility import extractRefreshToken, validateRefreshToken, createNewAccessToken, verifyAccessToken, displayUsers, checkCredentials, checkFormat, addUser, extractAccessTokenFromWebSocket, validateAccessToken
 
 
 auth = Blueprint('auth', __name__)
@@ -50,13 +50,36 @@ def refresh():
 
 
 @socketio.on('connect')
-def handle_connect():
-    print(f"🔌 Client connected: {request.sid}")
+def handle_connect(auth=None):
+    print(f"Client connection attempt: {request.sid}")
+
+    access_token, error_response, status_code = extractAccessTokenFromWebSocket()
+    if access_token is None:
+        print(f"Connection rejected - No token provided for {request.sid}")
+        # Instead of returning False, disconnect the client properly
+        disconnect()
+        return
+
+    print(f"Token extracted, calling validateAccessToken...")
+
+    user_data, error_response, status_code = validateAccessToken(access_token)
+    if user_data is None:
+        print(f"Connection rejected - Token validation failed for {request.sid}")
+        # Instead of returning False, disconnect the client properly
+        disconnect()
+        return
+
+    print(f"Client authenticated: {request.sid} (User: {user_data['username']})")
+
     emit('connection_response', {
         'message': 'Welcome to Cartesian Theater!',
         'session_id': request.sid,
+        'user_id': user_data['user_id'],
+        'username': user_data['username'],
         'status': 'connected'
     })
+
+
 
 @socketio.on('disconnect')
 def handle_disconnect():
