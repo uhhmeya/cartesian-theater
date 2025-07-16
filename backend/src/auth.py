@@ -60,7 +60,7 @@ def handle_connect():
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    print(f"🔌 Client disconnected: {request.sid}")
+    print(f" Client disconnected: {request.sid}")
 
 
 @auth.route('/debug/users', methods=['GET'])

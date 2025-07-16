@@ -1,39 +1,42 @@
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { BackButton, StarryBackground } from '../helpers/components.jsx'
-import { clearTokens } from '../helpers/utility.jsx'
+import { StarryBackground, ChatSidebar, ChatMain } from '../helpers/components.jsx'
+import { clearTokens, mockChannels, mockDirectMessages, mockMessages, getChannelName } from '../helpers/utility.jsx'
 
 function Dashboard() {
     const navigate = useNavigate()
+    const [activeChannel, setActiveChannel] = useState('general')
 
     const handleLogout = () => {
         clearTokens()
         navigate('/login')
     }
 
+    const handleSendMessage = (text) => {
+        // Placeholder for sending messages
+        console.log('Sending message:', text)
+    }
+
+    const currentMessages = mockMessages[activeChannel] || []
+    const channelName = getChannelName(activeChannel, mockChannels, mockDirectMessages)
+
     return (
-        <div className="dashboard-page">
+        <div className="chat-container">
             <StarryBackground />
-            <div className="auth-glow"></div>
 
-            <BackButton to="/" text="Back to Home" />
+            <ChatSidebar
+                activeChannel={activeChannel}
+                onChannelSelect={setActiveChannel}
+                channels={mockChannels}
+                directMessages={mockDirectMessages}
+                onLogout={handleLogout}
+            />
 
-            <div className="dashboard-container">
-                <h1>Welcome to Cartesian Theater</h1>
-                <h2>You're logged in!</h2>
-
-                <p style={{ marginBottom: '2rem' }}>
-                    This is your secure dashboard. Start exploring the features of Cartesian Theater.
-                </p>
-
-                <div className="hero-buttons">
-                    <button onClick={() => alert('Feature coming soon!')}>
-                        Start Messaging
-                    </button>
-                    <button className="btn-secondary" onClick={handleLogout}>
-                        Logout
-                    </button>
-                </div>
-            </div>
+            <ChatMain
+                activeChannel={channelName}
+                messages={currentMessages}
+                onSendMessage={handleSendMessage}
+            />
         </div>
     )
 }

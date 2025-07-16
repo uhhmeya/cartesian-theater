@@ -1,4 +1,5 @@
 import {useState} from "react";
+import { io } from 'socket.io-client'
 
 const getNewAccessToken = async () => {
     const refreshToken = getRefreshToken();
@@ -167,11 +168,20 @@ export const showMessage = (messageText, setMessage, duration = 4000) => {
     setTimeout(() => setMessage(''), duration)
 }
 
-import { io } from 'socket.io-client'
-
 export const connectWebSocket = (onStatusChange) => {
+    const token = getAccessToken();
+
+    if (!token) {
+        console.error('No access token found');
+        onStatusChange('error', null);
+        return null;
+    }
+
     const socket = io('http://localhost:5001', {
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        query: {
+            token: token
+        }
     });
 
     socket.on('connect', () => {
@@ -190,7 +200,7 @@ export const connectWebSocket = (onStatusChange) => {
     });
 
     return socket;
-};
+}
 
 
 export const useMessage = (duration = 5000) => {
@@ -203,4 +213,47 @@ export const useMessage = (duration = 5000) => {
     }
 
     return [message, showMessage, () => setMessage('')]
+}
+
+// Mock chat data
+export const mockChannels = [
+    { id: 'general', name: 'General', unread: 3 },
+    { id: 'random', name: 'Random', unread: 0 },
+    { id: 'tech', name: 'Tech Discussion', unread: 7 },
+    { id: 'gaming', name: 'Gaming', unread: 0 },
+    { id: 'announcements', name: 'Announcements', unread: 1 }
+]
+
+export const mockDirectMessages = [
+    { id: 'dm1', name: 'Alice Johnson', status: 'online', unread: 2 },
+    { id: 'dm2', name: 'Bob Smith', status: 'away', unread: 0 },
+    { id: 'dm3', name: 'Charlie Davis', status: 'offline', unread: 0 }
+]
+
+export const mockMessages = {
+    general: [
+        { id: 1, user: 'System', text: 'Welcome to Cartesian Theater!', time: '10:00 AM', isSystem: true },
+        { id: 2, user: 'Alice Johnson', text: 'Hey everyone! Excited to be here', time: '10:15 AM' },
+        { id: 3, user: 'Bob Smith', text: 'Welcome Alice! This platform is amazing', time: '10:16 AM' },
+        { id: 4, user: 'You', text: 'Hello team!', time: '10:20 AM', isOwn: true }
+    ],
+    random: [
+        { id: 1, user: 'Charlie Davis', text: 'Anyone up for a game tonight?', time: '9:00 PM' },
+        { id: 2, user: 'Alice Johnson', text: 'Count me in!', time: '9:05 PM' }
+    ],
+    tech: [
+        { id: 1, user: 'Bob Smith', text: 'Check out this new encryption algorithm', time: '2:00 PM' },
+        { id: 2, user: 'System', text: 'Link shared: quantum-encryption.pdf', time: '2:01 PM', isSystem: true }
+    ],
+    gaming: [
+        { id: 1, user: 'Charlie Davis', text: 'New game dropped!', time: '3:00 PM' }
+    ],
+    announcements: [
+        { id: 1, user: 'Admin', text: 'Server maintenance scheduled for midnight', time: '1:00 PM' }
+    ]
+}
+
+export const getChannelName = (channelId, channels, dms) => {
+    const channel = [...channels, ...dms].find(ch => ch.id === channelId)
+    return channel ? channel.name : channelId
 }

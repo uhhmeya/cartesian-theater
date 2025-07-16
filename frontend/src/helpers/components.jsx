@@ -401,4 +401,154 @@ export const animationStyles = `
     }
 `
 
+// Chat Components
+export function ChatSidebar({ activeChannel, onChannelSelect, channels, directMessages, onLogout }) {
+    return (
+        <div className="chat-sidebar">
+            <div className="sidebar-header">
+                <h2>Cartesian Theater</h2>
+                <div className="user-menu">
+                    <div className="user-status online"></div>
+                    <span>You</span>
+                </div>
+            </div>
+
+            <ChannelSection
+                title="Channels"
+                items={channels}
+                activeId={activeChannel}
+                onSelect={onChannelSelect}
+                showAdd={true}
+            />
+
+            <ChannelSection
+                title="Direct Messages"
+                items={directMessages}
+                activeId={activeChannel}
+                onSelect={onChannelSelect}
+                isDM={true}
+            />
+
+            <ChannelSection
+                title="Find Friends"
+                items={[{ id: 'find', name: 'Coming Soon...', disabled: true }]}
+                activeId={null}
+                onSelect={() => {}}
+            />
+
+            <div className="sidebar-footer">
+                <button className="logout-button" onClick={onLogout}>
+                    <span>←</span> Logout
+                </button>
+            </div>
+        </div>
+    )
+}
+
+function ChannelSection({ title, items, activeId, onSelect, showAdd, isDM }) {
+    return (
+        <div className="channel-section">
+            <div className="section-header">
+                <span>{title}</span>
+                {showAdd && <button className="add-button">+</button>}
+            </div>
+            <div className="channel-list">
+                {items.map(item => (
+                    <ChannelItem
+                        key={item.id}
+                        item={item}
+                        isActive={activeId === item.id}
+                        onClick={() => !item.disabled && onSelect(item.id)}
+                        isDM={isDM}
+                    />
+                ))}
+            </div>
+        </div>
+    )
+}
+
+function ChannelItem({ item, isActive, onClick, isDM }) {
+    return (
+        <div
+            className={`channel-item ${isActive ? 'active' : ''} ${item.disabled ? 'disabled' : ''}`}
+            onClick={onClick}
+        >
+            <span className="channel-prefix">{isDM ? '' : '#'}</span>
+            {isDM && item.status && <div className={`user-status ${item.status}`}></div>}
+            <span className="channel-name">{item.name}</span>
+            {item.unread > 0 && <span className="unread-badge">{item.unread}</span>}
+        </div>
+    )
+}
+
+export function ChatMain({ activeChannel, messages, onSendMessage }) {
+    const [messageText, setMessageText] = useState('')
+
+    const handleSubmit = (e) => {
+        e.preventDefault()
+        if (messageText.trim()) {
+            onSendMessage(messageText)
+            setMessageText('')
+        }
+    }
+
+    return (
+        <div className="chat-main">
+            <div className="chat-header">
+                <h3># {activeChannel}</h3>
+                <div className="header-actions">
+                    <button className="header-button">🔍</button>
+                    <button className="header-button">ℹ️</button>
+                </div>
+            </div>
+
+            <MessageList messages={messages} />
+
+            <form className="message-input-container" onSubmit={handleSubmit}>
+                <input
+                    type="text"
+                    className="message-input"
+                    placeholder={`Message #${activeChannel}`}
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                />
+                <button type="submit" className="send-button">Send</button>
+            </form>
+        </div>
+    )
+}
+
+function MessageList({ messages }) {
+    return (
+        <div className="messages-container">
+            {messages.map(msg => (
+                <Message key={msg.id} message={msg} />
+            ))}
+        </div>
+    )
+}
+
+function Message({ message }) {
+    const messageClass = `message ${message.isSystem ? 'system-message' : ''} ${message.isOwn ? 'own-message' : ''}`
+
+    return (
+        <div className={messageClass}>
+            {!message.isSystem && (
+                <div className="message-avatar">
+                    {message.user[0].toUpperCase()}
+                </div>
+            )}
+            <div className="message-content">
+                {!message.isSystem && (
+                    <div className="message-header">
+                        <span className="message-user">{message.user}</span>
+                        <span className="message-time">{message.time}</span>
+                    </div>
+                )}
+                <div className="message-text">{message.text}</div>
+            </div>
+        </div>
+    )
+}
+
 export { AuthForm, MessageDisplay, BackButton }
