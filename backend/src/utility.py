@@ -3,6 +3,8 @@ from src.misc import User, bcrypt, db
 import re
 from flask_jwt_extended import create_access_token, create_refresh_token
 from functools import wraps
+import secrets
+from datetime import datetime, timedelta
 
 COMMON_PASSWORDS = {
     'password', 'letmein', '123456', 'password123', 'admin123',
@@ -13,6 +15,8 @@ COMMON_PASSWORDS = {
 RESERVED_USERNAMES = {
     'admin', 'root', 'user', 'test', 'demo', 'null', 'undefined', 'sample'
 }
+
+PAGE_TOKENS = {}
 
 def checkCredentials(username, password):
     if not username or not password:
@@ -335,3 +339,5 @@ def login_required(f):
         # Make user available to the route
         return f(user, *args, **kwargs)
     return decorated_function
+
+

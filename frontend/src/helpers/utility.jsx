@@ -1,3 +1,5 @@
+import {useState} from "react";
+
 const getNewAccessToken = async () => {
     const refreshToken = getRefreshToken();
     if (!refreshToken) return null;
@@ -189,3 +191,16 @@ export const connectWebSocket = (onStatusChange) => {
 
     return socket;
 };
+
+
+export const useMessage = (duration = 5000) => {
+    const [message, setMessage] = useState('')
+
+    const showMessage = (msg) => {
+        setMessage(msg)
+        const timer = setTimeout(() => setMessage(''), duration)
+        return () => clearTimeout(timer)
+    }
+
+    return [message, showMessage, () => setMessage('')]
+}

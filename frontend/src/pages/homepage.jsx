@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
-import { StarryBackground, TextLogo, animationStyles } from '../components/StyleComponents.jsx'
-import logo from '../../logo.webp'
+import { StarryBackground, TextLogo, animationStyles } from '../helpers/components.jsx'
+import logo from '/logo.webp'
 
 function Homepage() {
     const navigate = useNavigate()

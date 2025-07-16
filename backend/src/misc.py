@@ -19,13 +19,3 @@ class User(db.Model):
     def __repr__(self):
         return f'<User {self.username}>'
 
-# FastAPI app
-fastapi_app = FastAPI(title="Cartesian Theater", version="1.0.0")
-
-@fastapi_app.get("/")
-def root():
-    return {"message": "FastAPI root is healthy"}
-
-@fastapi_app.get("/health")
-def health_check():
-    return {"status": "healthy", "service": "cartesian-theater"}

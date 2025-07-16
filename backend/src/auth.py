@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 from flask_socketio import emit
 from src.misc import User, socketio
-from src.auth.utility import extractRefreshToken, validateRefreshToken, createNewAccessToken, verifyAccessToken, displayUsers, checkCredentials, checkFormat, addUser
+from src.utility import extractRefreshToken, validateRefreshToken, createNewAccessToken, verifyAccessToken, displayUsers, checkCredentials, checkFormat, addUser
 
 
 auth = Blueprint('auth', __name__)
