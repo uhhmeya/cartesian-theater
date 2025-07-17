@@ -56,7 +56,6 @@ function Signup() {
                 }
             }, 2000)
         } catch (error) {
-            console.error('Signup error:', error)
             if (isMountedRef.current) {
                 setMessage('An unexpected error occurred')
                 setIsLoading(false)

@@ -88,7 +88,6 @@ export async function apiRequest(endpoint, payload, isRetry = false) {
             };
         }
 
-        console.error("Network error:", err);
         return {
             success: false,
             message: 'Network error - please check your connection',
@@ -173,8 +172,12 @@ export const connectWebSocket = (onStatusChange) => {
     const token = getAccessToken();
 
     if (!token) {
-        console.error('No access token found');
         onStatusChange('error', null);
+        return null;
+    }
+
+    if (isTokenExpired(token)) {
+        onStatusChange('token_expired', null);
         return null;
     }
 
@@ -183,24 +186,34 @@ export const connectWebSocket = (onStatusChange) => {
         query: {
             token: token
         },
-        extraHeaders: {
-            Authorization: `Bearer ${token}`
-        }
+        reconnection: true,
+        reconnectionAttempts: 3,
+        reconnectionDelay: 1000,
+        timeout: 10000
     });
 
     socket.on('connect', () => {
-        console.log('SocketIO connected:', socket.id);
         onStatusChange('connected', socket);
     });
 
     socket.on('connect_error', (error) => {
-        console.error('SocketIO connection error:', error);
-        onStatusChange('error', null);
+        if (error.message === 'Invalid namespace') {
+            onStatusChange('auth_error', null);
+        } else {
+            onStatusChange('error', null);
+        }
     });
 
     socket.on('disconnect', (reason) => {
-        console.log('SocketIO disconnected:', reason);
-        onStatusChange('disconnected', null);
+        if (reason === 'io server disconnect') {
+            onStatusChange('auth_error', null);
+        } else {
+            onStatusChange('disconnected', null);
+        }
+    });
+
+    socket.on('connection_response', (data) => {
+        // Handle connection response
     });
 
     return socket;
@@ -226,7 +239,6 @@ export const getUsername = () => {
     return localStorage.getItem('username') || 'User';
 };
 
-// Mock chat data
 export const mockChannels = [
     { id: 'general', name: 'general' },
     { id: 'random', name: 'random' },

@@ -24,7 +24,6 @@ function Dashboard() {
         const storedUsername = getUsername()
         setUsername(storedUsername)
 
-        // Initialize messages for all channels
         const initialMessages = {}
         const allChannels = [...mockChannels, ...mockDirectMessages]
         allChannels.forEach(channel => {
@@ -32,34 +31,33 @@ function Dashboard() {
         })
         setMessages(initialMessages)
 
-        // Connect to WebSocket
         const socket = connectWebSocket((status, socketInstance) => {
             setConnectionStatus(status)
+
             if (status === 'connected' && socketInstance) {
                 socketRef.current = socketInstance
-                console.log('WebSocket connected successfully')
 
-                // Listen for server messages
                 socketInstance.on('connection_response', (data) => {
-                    console.log('Connection response:', data)
+                    // Handle connection response
                 })
 
                 socketInstance.on('message', (data) => {
-                    console.log('Received message:', data)
-                    // Handle incoming messages here
+                    // Handle incoming message
                 })
-            } else if (status === 'error') {
-                console.error('WebSocket connection failed')
+            } else if (status === 'error' || status === 'auth_error' || status === 'token_expired') {
+                if (status === 'auth_error' || status === 'token_expired') {
+                    clearTokens()
+                    navigate('/login')
+                }
             }
         })
 
-        // Cleanup on unmount
         return () => {
             if (socketRef.current) {
                 socketRef.current.disconnect()
             }
         }
-    }, [])
+    }, [navigate])
 
     const handleLogout = () => {
         if (socketRef.current) {
@@ -82,7 +80,6 @@ function Dashboard() {
             [activeChannel]: [...(prev[activeChannel] || []), newMessage]
         }))
 
-        // Send message via WebSocket if connected
         if (socketRef.current && connectionStatus === 'connected') {
             socketRef.current.emit('message', {
                 channel: activeChannel,
@@ -90,7 +87,6 @@ function Dashboard() {
             })
         }
 
-        // Simulate AI response if messaging erik_ai
         if (activeChannel === 'erik_ai') {
             setTimeout(() => {
                 const aiResponse = {

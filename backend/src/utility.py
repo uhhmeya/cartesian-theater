@@ -35,8 +35,8 @@ def checkCredentials(username, password):
             "error_type": "invalid_credentials"
         }), 401
 
-    access_token = create_access_token(identity=user.id)
-    refresh_token = create_refresh_token(identity=user.id)
+    access_token = create_access_token(identity=str(user.id))
+    refresh_token = create_refresh_token(identity=str(user.id))
 
     return jsonify({
         "message": "Login successful",
@@ -213,7 +213,6 @@ def addUser(username, password):
 
     except Exception as e:
         db.session.rollback()
-        print(f"Error creating user: {e}")  # Log the error for debugging
         return jsonify({
             "message": "Internal server error while creating user",
             "success": False,
@@ -225,13 +224,10 @@ def verifyAccessToken():
     from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
 
     try:
-        # Check if there's a valid JWT token in the request
         verify_jwt_in_request()
 
-        # Get the user ID from the token
         user_id = get_jwt_identity()
 
-        # Get the actual user from database
         user = User.query.get(user_id)
         if not user:
             return None, jsonify({
@@ -240,7 +236,6 @@ def verifyAccessToken():
                 "error_type": "invalid_user"
             }), 401
 
-        # Return the user if everything is valid
         return user, None, None
 
     except Exception as e:
@@ -251,7 +246,6 @@ def verifyAccessToken():
         }), 401
 
 def extractRefreshToken():
-    """Get refresh token from request body"""
     from flask import request, jsonify
 
     refresh_token = request.get_json().get('refresh_token')
@@ -266,14 +260,12 @@ def extractRefreshToken():
     return refresh_token, None, None
 
 def validateRefreshToken(refresh_token):
-    """Check if refresh token is valid and return user_id"""
     from flask import jsonify
     from flask_jwt_extended import decode_token
 
     try:
-        # Decode and validate the refresh token
         decoded_token = decode_token(refresh_token)
-        user_id = decoded_token['sub']  # 'sub' contains the user ID
+        user_id = decoded_token['sub']
 
         return user_id, None, None
 
@@ -285,12 +277,11 @@ def validateRefreshToken(refresh_token):
         }), 401
 
 def createNewAccessToken(user_id):
-    """Create new access token for user"""
     from flask import jsonify
     from flask_jwt_extended import create_access_token
 
     try:
-        new_access_token = create_access_token(identity=user_id)
+        new_access_token = create_access_token(identity=str(user_id))
 
         return new_access_token, None, None
 
@@ -302,14 +293,12 @@ def createNewAccessToken(user_id):
         }), 500
 
 def displayUsers():
-    """Get all users with minimal information for debugging"""
     from flask import jsonify
     from datetime import datetime
 
     try:
         users = User.query.all()
 
-        # Simple list of users - just ID and username
         user_list = []
         for user in users:
             user_list.append({
@@ -336,16 +325,11 @@ def login_required(f):
         user, error_response, status_code = verifyAccessToken()
         if user is None:
             return error_response, status_code
-        # Make user available to the route
         return f(user, *args, **kwargs)
     return decorated_function
 
 def extractAccessTokenFromWebSocket():
-    """Get access token from WebSocket query params"""
     from flask import request, jsonify
-
-    print(f"Query args: {request.args}")  # ADD THIS
-    print(f"Full URL: {request.url}")     # ADD THIS
 
     access_token = request.args.get('token')
 
@@ -360,52 +344,58 @@ def extractAccessTokenFromWebSocket():
 
 
 def validateAccessToken(access_token):
-    """Check if access token is valid and return user info"""
     from flask import jsonify
     from flask_jwt_extended import decode_token
     from src.misc import User
-
-    print(f"Validating token: {access_token[:20]}...")  # Print first 20 chars for debugging
+    from datetime import datetime, timezone
 
     try:
-        # Use Flask-JWT-Extended's decode_token which handles the secret key internally
         decoded = decode_token(access_token)
-        print(f"Token decoded successfully: {decoded}")
 
-        # Check if token is expired
-        from datetime import datetime
         exp_timestamp = decoded.get('exp')
-        if exp_timestamp and datetime.utcnow().timestamp() > exp_timestamp:
-            print("Token is expired")
+        if exp_timestamp:
+            current_time = datetime.now(timezone.utc).timestamp()
+            if current_time > exp_timestamp:
+                return None, jsonify({
+                    "message": "Token has expired",
+                    "success": False,
+                    "error_type": "expired_token"
+                }), 401
+
+        user_id = decoded.get('sub')
+        if not user_id:
             return None, jsonify({
-                "message": "Token has expired",
+                "message": "Invalid token format",
                 "success": False,
-                "error_type": "expired_token"
+                "error_type": "invalid_token"
             }), 401
 
-        user_id = decoded.get('sub')  # 'sub' contains the user ID
-        user = User.query.get(user_id)
+        try:
+            user_id_int = int(user_id)
+        except (ValueError, TypeError):
+            return None, jsonify({
+                "message": "Invalid user ID format",
+                "success": False,
+                "error_type": "invalid_token"
+            }), 401
 
+        user = User.query.get(user_id_int)
         if not user:
-            print(f"User not found for ID: {user_id}")
             return None, jsonify({
                 "message": "User not found",
                 "success": False,
                 "error_type": "invalid_user"
             }), 401
 
-        print(f"User validated: {user.username}")
         return {
-            'user_id': user_id,
+            'user_id': str(user_id_int),
             'username': user.username,
             'user': user
         }, None, None
 
     except Exception as e:
-        print(f"Token validation error: {type(e).__name__}: {str(e)}")
         return None, jsonify({
             "message": "Invalid or expired access token",
             "success": False,
             "error_type": "invalid_access_token"
         }), 401
-

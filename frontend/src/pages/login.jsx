@@ -30,7 +30,6 @@ function Login() {
             setTimeout(() => navigate('/home'), 1000)
 
         } catch (error) {
-            console.error('Login error:', error)
             showMessage('An unexpected error occurred')
             setIsLoading(false)
         }
