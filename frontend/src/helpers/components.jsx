@@ -2,16 +2,6 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getRelativeTime } from './utility.jsx'
 
-const debug = (component, message, data = null) => {
-    const timestamp = new Date().toISOString().split('T')[1].slice(0, -1)
-    const prefix = `[${timestamp}] COMPONENT ${component}:`
-    if (data) {
-        console.log(prefix, message, data)
-    } else {
-        console.log(prefix, message)
-    }
-}
-
 function AuthForm({ onSubmit, submitText, isLoading = false }) {
     const [user, setUser] = useState('')
     const [password, setPassword] = useState('')
@@ -161,12 +151,6 @@ export function ChatSidebar({ activeChat, onChatSelect, channels, directMessages
     const [sidebarWidth, setSidebarWidth] = useState(240)
     const sidebarRef = useRef(null)
 
-    console.log('[SIDEBAR] Rendering', {
-        activeChat,
-        unreadCounts,
-        onlineUsersCount: Object.keys(onlineUsers || {}).length
-    })
-
     const handleMouseDown = (e) => {
         setIsResizing(true)
         e.preventDefault()
@@ -258,7 +242,6 @@ function ChatSection({ title, items, activeId, onSelect, showAdd, isDM, unreadCo
                         item={item}
                         isActive={activeId === item.id}
                         onClick={() => {
-                            console.log('[CHAT] Selecting chat:', item.id)
                             if (!item.disabled) onSelect(item.id)
                         }}
                         isDM={isDM}
@@ -319,7 +302,6 @@ export function ChatMain({ activeChat, messages, onSendMessage, currentUser, cha
     const handleSubmit = (e) => {
         e.preventDefault()
         if (messageText.trim()) {
-            console.log('[CHAT] Sending message:', messageText)
             onSendMessage(messageText)
             setMessageText('')
             if (onTyping) onTyping(false)
@@ -353,13 +335,6 @@ export function ChatMain({ activeChat, messages, onSendMessage, currentUser, cha
             default: return 'bg-gray-500'
         }
     }
-
-    console.log('[CHAT] Rendering ChatMain', {
-        activeChat,
-        messageCount: messages.length,
-        connectionStatus,
-        typingUsers: typingUsers?.length || 0
-    })
 
     return (
         <div className="chat-main">
@@ -419,23 +394,30 @@ export function ChatMain({ activeChat, messages, onSendMessage, currentUser, cha
 }
 
 function MessageList({ messages, currentUser, onAddReaction }) {
-    console.log('[MESSAGES] Rendering message list', { count: messages.length })
-
     return (
         <div className="messages-container">
-            {messages.map(msg => (
+            {messages.map((msg, index) => (
                 <Message
                     key={msg.id}
                     message={msg}
                     currentUser={currentUser}
                     onAddReaction={onAddReaction}
+                    showTime={index === 0 || shouldShowTime(messages[index - 1], msg)}
                 />
             ))}
         </div>
     )
 }
 
-function Message({ message, currentUser, onAddReaction }) {
+function shouldShowTime(prevMsg, currMsg) {
+    if (!prevMsg || !currMsg) return true
+    const prevTime = new Date(prevMsg.timestamp)
+    const currTime = new Date(currMsg.timestamp)
+    const diffMinutes = (currTime - prevTime) / (1000 * 60)
+    return diffMinutes > 5
+}
+
+function Message({ message, currentUser, onAddReaction, showTime }) {
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
     const isOwn = message.user === currentUser
     const isSystem = message.isSystem
@@ -443,7 +425,6 @@ function Message({ message, currentUser, onAddReaction }) {
     const initial = message.user ? message.user[0].toUpperCase() : '?'
 
     const handleReaction = (emoji) => {
-        console.log('[REACTION] Adding reaction', { messageId: message.id, emoji })
         if (onAddReaction) {
             onAddReaction(message.id, emoji)
         }
@@ -489,7 +470,9 @@ function Message({ message, currentUser, onAddReaction }) {
                     )}
                 </div>
                 {!isOwn && <div className="message-sender">{message.user}</div>}
-                <span className="message-time">{message.timestamp ? getRelativeTime(message.timestamp) : message.time}</span>
+                {showTime && message.timestamp && (
+                    <span className="message-time">{getRelativeTime(message.timestamp)}</span>
+                )}
                 {message.reactions && Object.keys(message.reactions).length > 0 && (
                     <div className="message-reactions">
                         {Object.entries(message.reactions).map(([emoji, users]) => (

@@ -1,64 +1,40 @@
 import {useState} from "react";
 import { io } from 'socket.io-client'
 
-const debug = (category, message, data = null) => {
-    const timestamp = new Date().toISOString().split('T')[1].slice(0, -1)
-    const prefix = `[${timestamp}] ${category}:`
-    if (data) {
-        console.log(prefix, message, data)
-    } else {
-        console.log(prefix, message)
-    }
-}
-
-// Global socket instance to prevent duplicates
 let globalSocket = null;
 
 const getNewAccessToken = async () => {
-    debug('🔄 AUTH', 'Attempting to refresh access token')
-
     const refreshToken = getRefreshToken();
-    if (!refreshToken) {
-        debug('❌ AUTH', 'No refresh token available')
-        return null;
-    }
+    if (!refreshToken) return null;
 
     const refreshResponse = await apiRequest('/api/refresh', {
         refresh_token: refreshToken
     }, true);
 
     if (refreshResponse.success && refreshResponse.data.access_token) {
-        debug('✅ AUTH', 'Access token refreshed successfully')
         localStorage.setItem('access_token', refreshResponse.data.access_token);
         return refreshResponse.data.access_token;
     }
 
-    debug('❌ AUTH', 'Failed to refresh access token', refreshResponse)
     return null;
 };
 
 const retryApiRequest = async (endpoint, payload) => {
-    debug('🔁 API', 'Retrying request', { endpoint })
     return apiRequest(endpoint, payload, true);
 };
 
 export async function apiRequest(endpoint, payload, isRetry = false) {
-    debug('📤 API', `Request to ${endpoint}`, { payload, isRetry })
-
     try {
         const accessToken = getAccessToken();
         const headers = { 'Content-Type': 'application/json' };
         if (accessToken) {
             headers['Authorization'] = `Bearer ${accessToken}`;
-            debug('🔐 API', `Using access token: ${accessToken.substring(0, 20)}...`)
         }
 
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 15000);
 
         const url = endpoint.startsWith('/api') ? endpoint : `/api${endpoint}`;
-
-        debug('🌐 API', `Fetching: ${url}`)
 
         const response = await fetch(url, {
             method: 'POST',
@@ -68,11 +44,8 @@ export async function apiRequest(endpoint, payload, isRetry = false) {
         });
         clearTimeout(timeoutId);
 
-        debug('📥 API', `Response status: ${response.status}`)
-
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
-            debug('❌ API', 'Invalid response content type', contentType)
             return {
                 success: false,
                 message: 'Server error - invalid response format',
@@ -81,14 +54,11 @@ export async function apiRequest(endpoint, payload, isRetry = false) {
         }
 
         const responseData = await response.json();
-        debug('📊 API', 'Response data', responseData)
 
         if (response.status === 401 && !isRetry && !endpoint.includes('/signin') && !endpoint.includes('/signup') && endpoint !== '/api/refresh') {
-            debug('⚠️ AUTH', 'Token expired, attempting refresh')
             const newToken = await getNewAccessToken();
             if (newToken) return await retryApiRequest(endpoint, payload);
 
-            debug('❌ AUTH', 'Token refresh failed, clearing tokens')
             clearTokens();
             window.location.href = '/login';
             return {
@@ -103,8 +73,6 @@ export async function apiRequest(endpoint, payload, isRetry = false) {
                 ? 'Server error. Please try again later.'
                 : responseData.message || `Request failed with status ${response.status}`;
 
-            debug('❌ API', 'Request failed', { status: response.status, message })
-
             return {
                 success: false,
                 message: message,
@@ -112,15 +80,12 @@ export async function apiRequest(endpoint, payload, isRetry = false) {
             };
         }
 
-        debug('✅ API', 'Request successful')
         return {
             success: true,
             data: responseData
         };
 
     } catch (err) {
-        debug('❌ API', 'Request error', err)
-
         if (err.name === 'AbortError') {
             return {
                 success: false,
@@ -138,49 +103,35 @@ export async function apiRequest(endpoint, payload, isRetry = false) {
 }
 
 export const saveTokens = (accessToken, refreshToken) => {
-    debug('💾 TOKEN', 'Saving tokens')
     localStorage.setItem('access_token', accessToken);
     localStorage.setItem('refresh_token', refreshToken);
 };
 
 export const getAccessToken = () => {
-    const token = localStorage.getItem('access_token');
-    debug('🔐 TOKEN', `Retrieved access token: ${token ? token.substring(0, 20) + '...' : 'null'}`)
-    return token;
+    return localStorage.getItem('access_token');
 };
 
 export const getRefreshToken = () => {
-    const token = localStorage.getItem('refresh_token');
-    debug('🔐 TOKEN', `Retrieved refresh token: ${token ? token.substring(0, 20) + '...' : 'null'}`)
-    return token;
+    return localStorage.getItem('refresh_token');
 };
 
 export const clearTokens = () => {
-    debug('🧹 TOKEN', 'Clearing all tokens')
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('username');
 };
 
 export const isLoggedIn = () => {
-    const loggedIn = getAccessToken() !== null && getRefreshToken() !== null;
-    debug('🔐 AUTH', `User logged in: ${loggedIn}`)
-    return loggedIn;
+    return getAccessToken() !== null && getRefreshToken() !== null;
 };
 
 export const isTokenExpired = (token) => {
-    if (!token) {
-        debug('⚠️ TOKEN', 'No token provided to check expiration')
-        return true;
-    }
+    if (!token) return true;
 
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        const isExpired = payload.exp * 1000 < Date.now();
-        debug('⏰ TOKEN', `Token expired: ${isExpired}`, { exp: new Date(payload.exp * 1000) })
-        return isExpired;
+        return payload.exp * 1000 < Date.now();
     } catch {
-        debug('❌ TOKEN', 'Failed to parse token')
         return true;
     }
 };
@@ -211,25 +162,18 @@ export const errorMap = {
 };
 
 export const getErrorMessage = (response) => {
-    const message = response.errorType === 'bad_format'
+    return response.errorType === 'bad_format'
         ? response.message
         : errorMap[response.errorType]?.label || 'Server error. Try again later.'
-    debug('🚨 ERROR', `Error message: ${message}`, { errorType: response.errorType })
-    return message
 }
 
 export const showMessage = (messageText, setMessage, duration = 4000) => {
-    debug('💬 UI', `Showing message: ${messageText}`)
     setMessage(messageText)
     setTimeout(() => setMessage(''), duration)
 }
 
 export const connectWebSocket = (onStatusChange) => {
-    debug('🔌 WEBSOCKET', 'Initiating WebSocket connection')
-
-    // Check if socket already exists
     if (globalSocket && globalSocket.connected) {
-        debug('✅ WEBSOCKET', 'Using existing connected socket')
         onStatusChange('connected', globalSocket);
         return globalSocket;
     }
@@ -237,20 +181,16 @@ export const connectWebSocket = (onStatusChange) => {
     const token = getAccessToken();
 
     if (!token) {
-        debug('❌ WEBSOCKET', 'No token available for connection')
         onStatusChange('error', null);
         return null;
     }
 
     if (isTokenExpired(token)) {
-        debug('❌ WEBSOCKET', 'Token expired before connection')
         onStatusChange('token_expired', null);
         return null;
     }
 
-    // Disconnect existing socket if any
     if (globalSocket) {
-        debug('🔌 WEBSOCKET', 'Disconnecting existing socket')
         globalSocket.disconnect();
         globalSocket = null;
     }
@@ -258,7 +198,6 @@ export const connectWebSocket = (onStatusChange) => {
     const socketUrl = window.location.hostname === 'localhost'
         ? 'http://localhost:5001'
         : window.location.origin
-    debug('🌐 WEBSOCKET', `Connecting to: ${socketUrl}`)
 
     const socket = io(socketUrl, {
         transports: ['websocket', 'polling'],
@@ -271,16 +210,13 @@ export const connectWebSocket = (onStatusChange) => {
         timeout: 10000
     });
 
-    // Store globally to prevent duplicates
     globalSocket = socket;
 
     socket.on('connect', () => {
-        debug('✅ WEBSOCKET', 'Connected successfully', { id: socket.id })
         onStatusChange('connected', socket);
     });
 
     socket.on('connect_error', (error) => {
-        debug('❌ WEBSOCKET', 'Connection error', { message: error.message, type: error.type })
         if (error.message === 'Invalid namespace') {
             onStatusChange('auth_error', null);
         } else {
@@ -289,7 +225,6 @@ export const connectWebSocket = (onStatusChange) => {
     });
 
     socket.on('disconnect', (reason) => {
-        debug('🔌 WEBSOCKET', 'Disconnected', { reason })
         if (reason === 'io server disconnect') {
             onStatusChange('auth_error', null);
         } else {
@@ -298,7 +233,6 @@ export const connectWebSocket = (onStatusChange) => {
     });
 
     socket.on('reconnect_attempt', (attemptNumber) => {
-        debug('🔄 WEBSOCKET', `Reconnection attempt #${attemptNumber}`)
         onStatusChange('reconnecting', null);
     });
 
@@ -306,47 +240,38 @@ export const connectWebSocket = (onStatusChange) => {
 }
 
 export const setupWebSocketHandlers = (socket, handlers) => {
-    debug('⚙️ WEBSOCKET', 'Setting up WebSocket handlers')
-
     socket.on('connection_response', (data) => {
-        debug('📨 WEBSOCKET', 'Connection response received', data)
         if (handlers.onConnectionResponse) {
             handlers.onConnectionResponse(data)
         }
         socket.emit('user_online')
-        debug('🟢 WEBSOCKET', 'Emitted user_online status')
     })
 
     socket.on('message', (data) => {
-        debug('💬 WEBSOCKET', 'Message received', data)
         if (handlers.onMessage) {
             handlers.onMessage(data)
         }
     })
 
     socket.on('typing_update', (data) => {
-        debug('⌨️ WEBSOCKET', 'Typing update', data)
         if (handlers.onTypingUpdate) {
             handlers.onTypingUpdate(data)
         }
     })
 
     socket.on('presence_update', (data) => {
-        debug('👥 WEBSOCKET', 'Presence update', { userCount: Object.keys(data.online_users).length })
         if (handlers.onPresenceUpdate) {
             handlers.onPresenceUpdate(data)
         }
     })
 
     socket.on('reaction_update', (data) => {
-        debug('😀 WEBSOCKET', 'Reaction update', data)
         if (handlers.onReactionUpdate) {
             handlers.onReactionUpdate(data)
         }
     })
 
     socket.on('messages_read', (data) => {
-        debug('✅ WEBSOCKET', 'Messages marked as read', data)
         if (handlers.onMessagesRead) {
             handlers.onMessagesRead(data)
         }
@@ -355,8 +280,6 @@ export const setupWebSocketHandlers = (socket, handlers) => {
 
 let typingTimeout = null
 export const sendTypingIndicator = (socket, channelId, isTyping) => {
-    debug('⌨️ TYPING', `Sending typing indicator`, { channelId, isTyping })
-
     if (typingTimeout) {
         clearTimeout(typingTimeout)
     }
@@ -368,7 +291,6 @@ export const sendTypingIndicator = (socket, channelId, isTyping) => {
 
     if (isTyping) {
         typingTimeout = setTimeout(() => {
-            debug('⌨️ TYPING', 'Auto-stopping typing indicator')
             socket.emit('typing', {
                 channel_id: channelId,
                 is_typing: false
@@ -378,17 +300,14 @@ export const sendTypingIndicator = (socket, channelId, isTyping) => {
 }
 
 export const joinChannel = (socket, channelId) => {
-    debug('➕ CHANNEL', `Joining channel: ${channelId}`)
     socket.emit('join_channel', { channel_id: channelId })
 }
 
 export const leaveChannel = (socket, channelId) => {
-    debug('➖ CHANNEL', `Leaving channel: ${channelId}`)
     socket.emit('leave_channel', { channel_id: channelId })
 }
 
 export const addReaction = (socket, messageId, emoji) => {
-    debug('😀 REACTION', `Adding reaction`, { messageId, emoji })
     socket.emit('add_reaction', {
         message_id: messageId,
         emoji: emoji
@@ -397,7 +316,6 @@ export const addReaction = (socket, messageId, emoji) => {
 
 export const loadMessages = async (channelId, page = 1) => {
     const url = `/api/messages/${channelId}?page=${page}`
-    debug('📨 MESSAGES', `Loading messages from: ${url}`)
 
     try {
         const response = await fetch(url, {
@@ -406,18 +324,13 @@ export const loadMessages = async (channelId, page = 1) => {
             }
         })
 
-        debug('📥 MESSAGES', `Response status: ${response.status}`)
-
         if (!response.ok) {
-            debug('❌ MESSAGES', 'Failed to load messages', { status: response.status })
             return { success: false, messages: [], unread_counts: {} }
         }
 
         const data = await response.json()
-        debug('✅ MESSAGES', `Loaded ${data.messages?.length || 0} messages`)
         return data
     } catch (error) {
-        debug('❌ MESSAGES', 'Error loading messages', error)
         return { success: false, messages: [], unread_counts: {} }
     }
 }
@@ -431,46 +344,34 @@ export const getRelativeTime = (timestamp) => {
     const diffHours = Math.floor(diffMins / 60)
     const diffDays = Math.floor(diffHours / 24)
 
-    let result = 'just now'
-    if (diffSecs < 60) result = 'just now'
-    else if (diffMins < 60) result = `${diffMins}m ago`
-    else if (diffHours < 24) result = `${diffHours}h ago`
-    else if (diffDays < 7) result = `${diffDays}d ago`
-    else result = then.toLocaleDateString()
-
-    debug('⏰ TIME', `Formatted time: ${result}`, { timestamp, diff: diffMs })
-    return result
+    if (diffSecs < 60) return ''
+    else if (diffMins < 60) return `${diffMins}m ago`
+    else if (diffHours < 24) return `${diffHours}h ago`
+    else if (diffDays < 7) return `${diffDays}d ago`
+    else return then.toLocaleDateString()
 }
 
 export const handleLogout = (socket, navigate) => {
-    debug('👋 AUTH', 'Logging out user')
     if (socket) {
         socket.disconnect()
     }
-    // Clear global socket reference
     globalSocket = null;
     clearTokens()
     navigate('/login')
 }
 
 export const sendMessage = (socket, activeChat, text, connectionStatus) => {
-    debug('💬 MESSAGE', 'Sending message', { activeChat, text: text.substring(0, 50) + '...', connectionStatus })
-
     if (socket && connectionStatus === 'connected') {
         socket.emit('message', {
             channel: activeChat,
             text: text
         })
-        debug('✅ MESSAGE', 'Message sent successfully')
         return true
     }
-    debug('❌ MESSAGE', 'Failed to send message - not connected')
     return false
 }
 
 export const initializeDashboardData = () => {
-    debug('🏠 DASHBOARD', 'Initializing dashboard data')
-
     const username = getUsername()
     const { channels, directMessages } = getChannelsAndDMs()
 
@@ -481,7 +382,6 @@ export const initializeDashboardData = () => {
                 id: 'welcome-1',
                 user: 'System',
                 text: 'Welcome to Cartesian Theater!',
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                 timestamp: new Date().toISOString(),
                 isSystem: true
             }]
@@ -492,12 +392,6 @@ export const initializeDashboardData = () => {
 
     directMessages.forEach(dm => {
         initialMessages[dm.id] = []
-    })
-
-    debug('✅ DASHBOARD', 'Dashboard initialized', {
-        username,
-        channelCount: channels.length,
-        dmCount: directMessages.length
     })
 
     return {
@@ -512,7 +406,6 @@ export const useMessage = (duration = 5000) => {
     const [message, setMessage] = useState('')
 
     const showMessage = (msg) => {
-        debug('💬 HOOK', `useMessage: ${msg}`)
         setMessage(msg)
         const timer = setTimeout(() => setMessage(''), duration)
         return () => clearTimeout(timer)
@@ -522,14 +415,11 @@ export const useMessage = (duration = 5000) => {
 }
 
 export const saveUsername = (username) => {
-    debug('💾 USER', `Saving username: ${username}`)
     localStorage.setItem('username', username);
 };
 
 export const getUsername = () => {
-    const username = localStorage.getItem('username') || 'User';
-    debug('👤 USER', `Retrieved username: ${username}`)
-    return username;
+    return localStorage.getItem('username') || 'User';
 };
 
 const mockChannels = [
@@ -546,7 +436,6 @@ const mockDirectMessages = [
 ]
 
 export const getChannelsAndDMs = () => {
-    debug('📋 CHAT', 'Getting channels and DMs')
     return {
         channels: mockChannels,
         directMessages: mockDirectMessages
@@ -554,7 +443,6 @@ export const getChannelsAndDMs = () => {
 }
 
 export const addMessageToChat = (currentMessages, chatId, newMessage) => {
-    debug('➕ MESSAGE', 'Adding message to chat', { chatId, messageId: newMessage.id })
     return {
         ...currentMessages,
         [chatId]: [...(currentMessages[chatId] || []), newMessage]
@@ -562,14 +450,12 @@ export const addMessageToChat = (currentMessages, chatId, newMessage) => {
 }
 
 export const updateMessageReactions = (messages, messageId, reactions) => {
-    debug('😀 MESSAGE', 'Updating message reactions', { messageId, reactions })
     return messages.map(msg =>
         msg.id === messageId ? { ...msg, reactions } : msg
     )
 }
 
 export const updateTypingUsers = (currentTyping, channelId, users) => {
-    debug('⌨️ TYPING', 'Updating typing users', { channelId, users })
     return {
         ...currentTyping,
         [channelId]: users
@@ -577,12 +463,10 @@ export const updateTypingUsers = (currentTyping, channelId, users) => {
 }
 
 export const updateUnreadCounts = (counts, newCounts) => {
-    debug('📊 UNREAD', 'Updating unread counts', newCounts)
     return { ...counts, ...newCounts }
 }
 
 export const updateOnlineUsers = (users) => {
-    debug('👥 ONLINE', 'Updating online users', { totalUsers: Object.keys(users).length })
     const onlineList = {}
     Object.entries(users).forEach(([userId, userData]) => {
         if (userData.status === 'online') {
@@ -593,23 +477,18 @@ export const updateOnlineUsers = (users) => {
 }
 
 export const createNewMessage = (username, text, userId = null) => {
-    const message = {
+    return {
         id: `temp-${Date.now()}`,
         user: username,
         user_id: userId || localStorage.getItem('user_id'),
         text: text,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         timestamp: new Date().toISOString(),
         reactions: {},
         is_read: false
     }
-    debug('🆕 MESSAGE', 'Created new message', message)
-    return message
 }
 
 export const getInitialMessagesForChat = (chatId, username) => {
-    debug('📝 MESSAGE', `Getting initial messages for chat: ${chatId}`)
-
     const now = new Date()
     const messages = []
 
@@ -618,7 +497,6 @@ export const getInitialMessagesForChat = (chatId, username) => {
             id: 'welcome-1',
             user: 'System',
             text: 'Welcome to Cartesian Theater!',
-            time: new Date(now - 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             timestamp: new Date(now - 3600000).toISOString(),
             isSystem: true
         })
@@ -628,7 +506,6 @@ export const getInitialMessagesForChat = (chatId, username) => {
             user: 'Sarah Chen',
             user_id: 'sarah_chen',
             text: 'Hey everyone! How\'s it going? 👋',
-            time: new Date(now - 300000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             timestamp: new Date(now - 300000).toISOString(),
             reactions: { '👍': [{ user_id: 'alex_johnson', username: 'Alex Johnson' }] },
             is_read: false
@@ -639,7 +516,6 @@ export const getInitialMessagesForChat = (chatId, username) => {
             user: 'Alex Johnson',
             user_id: 'alex_johnson',
             text: 'Pretty good! Just working on the new features. The typing indicators are looking great!',
-            time: new Date(now - 180000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             timestamp: new Date(now - 180000).toISOString(),
             reactions: { '🎉': [{ user_id: 'sarah_chen', username: 'Sarah Chen' }] },
             is_read: false
@@ -650,7 +526,6 @@ export const getInitialMessagesForChat = (chatId, username) => {
             user: 'erik_ai',
             user_id: '999999',
             text: 'I\'ve analyzed the chat patterns. The average response time is 42 seconds. Fascinating! 🤖',
-            time: new Date(now - 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             timestamp: new Date(now - 60000).toISOString(),
             reactions: { '🤖': [{ user_id: 'sarah_chen', username: 'Sarah Chen' }, { user_id: 'alex_johnson', username: 'Alex Johnson' }] },
             is_read: false,
@@ -662,7 +537,6 @@ export const getInitialMessagesForChat = (chatId, username) => {
             user: 'Sarah Chen',
             user_id: 'sarah_chen',
             text: 'Hey! Did you see the new message reactions feature?',
-            time: new Date(now - 120000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             timestamp: new Date(now - 120000).toISOString(),
             is_read: false
         })
@@ -672,7 +546,6 @@ export const getInitialMessagesForChat = (chatId, username) => {
             user: username,
             user_id: username,
             text: 'Yes! It\'s working great. Try clicking this message!',
-            time: new Date(now - 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             timestamp: new Date(now - 60000).toISOString(),
             is_read: true,
             reactions: { '❤️': [{ user_id: 'sarah_chen', username: 'Sarah Chen' }] }
@@ -683,7 +556,6 @@ export const getInitialMessagesForChat = (chatId, username) => {
             user: 'erik_ai',
             user_id: '999999',
             text: 'Hello! I\'m Erik, your AI assistant. How can I help you today?',
-            time: new Date(now - 300000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
             timestamp: new Date(now - 300000).toISOString(),
             isAI: true
         })
@@ -694,9 +566,7 @@ export const getInitialMessagesForChat = (chatId, username) => {
 
 export const getChatDisplayName = (chatId, channels, dms) => {
     const chat = [...channels, ...dms].find(ch => ch.id === chatId)
-    const name = chat ? chat.name : chatId
-    debug('💬 CHAT', `Display name for ${chatId}: ${name}`)
-    return name
+    return chat ? chat.name : chatId
 }
 
 export const getConnectionStatusText = (status) => {
@@ -727,8 +597,6 @@ export const getConnectionStatusColor = (status) => {
 
 let audioContext = null
 export const playNotificationSound = (type = 'message') => {
-    debug('🔊 SOUND', `Playing notification sound: ${type}`)
-
     try {
         if (!audioContext) {
             audioContext = new (window.AudioContext || window.webkitAudioContext)()
@@ -752,6 +620,6 @@ export const playNotificationSound = (type = 'message') => {
             oscillator.stop(audioContext.currentTime + 0.15)
         }
     } catch (e) {
-        debug('❌ SOUND', 'Could not play notification sound', e)
+        // Silent fail
     }
 }

@@ -4,8 +4,6 @@ from flask_jwt_extended import JWTManager
 from flask_socketio import SocketIO
 from datetime import datetime
 
-from fastapi import FastAPI
-
 db = SQLAlchemy()
 bcrypt = Bcrypt()
 jwt = JWTManager()
