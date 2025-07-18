@@ -2,7 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import Homepage from './pages/Homepage.jsx'
 import Login from './pages/Login.jsx'
 import Signup from './pages/Signup.jsx'
-import Dashboard from './pages/dashboard.jsx'
+import Dashboard from './pages/Dashboard.jsx'
 import './App.css'
 
 function App() {

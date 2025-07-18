@@ -6,7 +6,6 @@ function Homepage() {
 
     return (
         <div>
-            {/* Header */}
             <header>
                 <div className="container">
                     <h1>
@@ -24,7 +23,6 @@ function Homepage() {
                 </div>
             </header>
 
-            {/* Hero Section */}
             <main className="hero">
                 <StarryBackground />
 

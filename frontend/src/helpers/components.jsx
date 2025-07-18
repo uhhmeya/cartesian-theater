@@ -1,5 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { getRelativeTime } from './utility.jsx'
+
+const debug = (component, message, data = null) => {
+    const timestamp = new Date().toISOString().split('T')[1].slice(0, -1)
+    const prefix = `[${timestamp}] COMPONENT ${component}:`
+    if (data) {
+        console.log(prefix, message, data)
+    } else {
+        console.log(prefix, message)
+    }
+}
 
 function AuthForm({ onSubmit, submitText, isLoading = false }) {
     const [user, setUser] = useState('')
@@ -77,7 +88,7 @@ export function TextLogo() {
     )
 }
 
-export function StarryBackground({ isDarkMode = false }) {
+export function StarryBackground() {
     const canvasRef = useRef(null)
 
     useEffect(() => {
@@ -89,20 +100,20 @@ export function StarryBackground({ isDarkMode = false }) {
         canvas.height = window.innerHeight
 
         const stars = []
-        const starCount = isDarkMode ? 400 : 800
+        const starCount = 800
 
         for (let i = 0; i < starCount; i++) {
             stars.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                size: Math.random() * 0.8 + 0.2,
-                brightness: isDarkMode ? Math.random() * 0.3 + 0.1 : Math.random() * 0.5 + 0.3,
+                size: Math.random() * 1 + 0.2,
+                brightness: Math.random() * 0.5 + 0.3,
                 twinkleSpeed: Math.random() * 0.015 + 0.005
             })
         }
 
         const animate = () => {
-            ctx.fillStyle = isDarkMode ? '#000000' : '#000000'
+            ctx.fillStyle = '#0a0a0a'
             ctx.fillRect(0, 0, canvas.width, canvas.height)
 
             stars.forEach(star => {
@@ -112,7 +123,7 @@ export function StarryBackground({ isDarkMode = false }) {
                 ctx.fill()
 
                 star.brightness += (Math.random() - 0.5) * star.twinkleSpeed
-                star.brightness = Math.max(0.1, Math.min(isDarkMode ? 0.4 : 0.8, star.brightness))
+                star.brightness = Math.max(0.1, Math.min(0.8, star.brightness))
             })
 
             requestAnimationFrame(animate)
@@ -127,12 +138,11 @@ export function StarryBackground({ isDarkMode = false }) {
 
         window.addEventListener('resize', handleResize)
         return () => window.removeEventListener('resize', handleResize)
-    }, [isDarkMode])
+    }, [])
 
     return (
         <canvas
             ref={canvasRef}
-            className="starry-messages"
             style={{
                 position: 'absolute',
                 top: 0,
@@ -146,12 +156,52 @@ export function StarryBackground({ isDarkMode = false }) {
     )
 }
 
-// Chat Components
-export function ChatSidebar({ activeChat, onChatSelect, channels, directMessages, onLogout, username }) {
+export function ChatSidebar({ activeChat, onChatSelect, channels, directMessages, onLogout, username, unreadCounts, onlineUsers }) {
+    const [isResizing, setIsResizing] = useState(false)
+    const [sidebarWidth, setSidebarWidth] = useState(240)
+    const sidebarRef = useRef(null)
+
+    console.log('[SIDEBAR] Rendering', {
+        activeChat,
+        unreadCounts,
+        onlineUsersCount: Object.keys(onlineUsers || {}).length
+    })
+
+    const handleMouseDown = (e) => {
+        setIsResizing(true)
+        e.preventDefault()
+    }
+
+    useEffect(() => {
+        const handleMouseMove = (e) => {
+            if (!isResizing) return
+            const newWidth = e.clientX
+            if (newWidth >= 180 && newWidth <= 350) {
+                setSidebarWidth(newWidth)
+            }
+        }
+
+        const handleMouseUp = () => {
+            setIsResizing(false)
+        }
+
+        if (isResizing) {
+            document.addEventListener('mousemove', handleMouseMove)
+            document.addEventListener('mouseup', handleMouseUp)
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', handleMouseMove)
+            document.removeEventListener('mouseup', handleMouseUp)
+        }
+    }, [isResizing])
+
     const userInitial = username ? username[0].toUpperCase() : 'U'
 
     return (
-        <div className="chat-sidebar">
+        <div className="chat-sidebar" ref={sidebarRef} style={{ width: sidebarWidth }}>
+            <div className="sidebar-resize" onMouseDown={handleMouseDown}></div>
+
             <div className="sidebar-header">
                 <h2>
                     <TextLogo />
@@ -172,7 +222,7 @@ export function ChatSidebar({ activeChat, onChatSelect, channels, directMessages
                 activeId={activeChat}
                 onSelect={onChatSelect}
                 showAdd={true}
-                isChannel={true}
+                unreadCounts={unreadCounts}
             />
 
             <ChatSection
@@ -181,6 +231,8 @@ export function ChatSidebar({ activeChat, onChatSelect, channels, directMessages
                 activeId={activeChat}
                 onSelect={onChatSelect}
                 isDM={true}
+                unreadCounts={unreadCounts}
+                onlineUsers={onlineUsers}
             />
 
             <div className="sidebar-footer">
@@ -192,7 +244,7 @@ export function ChatSidebar({ activeChat, onChatSelect, channels, directMessages
     )
 }
 
-function ChatSection({ title, items, activeId, onSelect, showAdd, isDM, isChannel }) {
+function ChatSection({ title, items, activeId, onSelect, showAdd, isDM, unreadCounts, onlineUsers }) {
     return (
         <div className="channel-section">
             <div className="section-header">
@@ -205,9 +257,13 @@ function ChatSection({ title, items, activeId, onSelect, showAdd, isDM, isChanne
                         key={item.id}
                         item={item}
                         isActive={activeId === item.id}
-                        onClick={() => !item.disabled && onSelect(item.id)}
+                        onClick={() => {
+                            console.log('[CHAT] Selecting chat:', item.id)
+                            if (!item.disabled) onSelect(item.id)
+                        }}
                         isDM={isDM}
-                        isChannel={isChannel}
+                        unreadCount={unreadCounts?.[item.id] || 0}
+                        isOnline={isDM && onlineUsers?.[item.id]?.status === 'online'}
                     />
                 ))}
             </div>
@@ -215,7 +271,7 @@ function ChatSection({ title, items, activeId, onSelect, showAdd, isDM, isChanne
     )
 }
 
-function ChatItem({ item, isActive, onClick, isDM, isChannel }) {
+function ChatItem({ item, isActive, onClick, isDM, unreadCount, isOnline }) {
     const initial = item.name ? item.name[0].toUpperCase() : '?'
 
     return (
@@ -223,21 +279,26 @@ function ChatItem({ item, isActive, onClick, isDM, isChannel }) {
             className={`channel-item ${isActive ? 'active' : ''} ${item.disabled ? 'disabled' : ''}`}
             onClick={onClick}
         >
-            {isChannel && <span className="channel-prefix">#</span>}
-            {isDM && (
+            {isDM ? (
                 <div className="dm-avatar">
                     {initial}
+                    {isOnline && <div className="user-status online"></div>}
                 </div>
+            ) : (
+                <span className="channel-prefix">#</span>
             )}
             <span className="channel-name">{item.name}</span>
+            {unreadCount > 0 && (
+                <span className="unread-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+            )}
         </div>
     )
 }
 
-export function ChatMain({ activeChat, messages, onSendMessage, currentUser, chatDisplayName }) {
+export function ChatMain({ activeChat, messages, onSendMessage, currentUser, chatDisplayName, typingUsers, onTyping, connectionStatus, onAddReaction }) {
     const [messageText, setMessageText] = useState('')
     const messagesEndRef = useRef(null)
-    const [lastTimeShown, setLastTimeShown] = useState(null)
+    const typingTimeoutRef = useRef(null)
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -247,25 +308,93 @@ export function ChatMain({ activeChat, messages, onSendMessage, currentUser, cha
         scrollToBottom()
     }, [messages])
 
+    useEffect(() => {
+        return () => {
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current)
+            }
+        }
+    }, [])
+
     const handleSubmit = (e) => {
         e.preventDefault()
         if (messageText.trim()) {
+            console.log('[CHAT] Sending message:', messageText)
             onSendMessage(messageText)
             setMessageText('')
+            if (onTyping) onTyping(false)
         }
     }
 
-    const isDM = activeChat && (activeChat.startsWith('erik') || !['general', 'random', 'tech', 'gaming'].includes(activeChat))
+    const handleInputChange = (e) => {
+        setMessageText(e.target.value)
+
+        if (onTyping && e.target.value.trim()) {
+            if (typingTimeoutRef.current) {
+                clearTimeout(typingTimeoutRef.current)
+            }
+
+            onTyping(true)
+
+            typingTimeoutRef.current = setTimeout(() => {
+                onTyping(false)
+            }, 1500)
+        }
+    }
+
+    const isDM = activeChat && (activeChat.includes('_') || !['general', 'random', 'tech', 'gaming'].includes(activeChat))
     const placeholder = isDM ? `Message ${chatDisplayName}` : `Message #${chatDisplayName}`
+
+    const getStatusColor = () => {
+        switch(connectionStatus) {
+            case 'connected': return 'bg-green-500'
+            case 'connecting': return 'bg-yellow-500'
+            case 'disconnected': return 'bg-red-500'
+            default: return 'bg-gray-500'
+        }
+    }
+
+    console.log('[CHAT] Rendering ChatMain', {
+        activeChat,
+        messageCount: messages.length,
+        connectionStatus,
+        typingUsers: typingUsers?.length || 0
+    })
 
     return (
         <div className="chat-main">
+            {connectionStatus !== 'connected' && (
+                <div className={`connection-status-bar ${getStatusColor()}`}>
+                    {connectionStatus === 'connecting' ? 'Connecting...' :
+                        connectionStatus === 'disconnected' ? 'Disconnected - Attempting to reconnect...' :
+                            'Connection error'}
+                </div>
+            )}
+
+            <div className="chat-header">
+                <h3>{isDM ? chatDisplayName : `#${chatDisplayName}`}</h3>
+                <div className="header-actions">
+                    <button className="header-button">⚙️</button>
+                </div>
+            </div>
+
             <MessageList
                 messages={messages}
                 currentUser={currentUser}
-                lastTimeShown={lastTimeShown}
-                setLastTimeShown={setLastTimeShown}
+                onAddReaction={onAddReaction}
             />
+
+            {typingUsers && typingUsers.length > 0 && (
+                <div className="typing-indicator">
+                    <div className="typing-dots">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
+                    <span>{typingUsers.join(', ')} {typingUsers.length === 1 ? 'is' : 'are'} typing...</span>
+                </div>
+            )}
+
             <div ref={messagesEndRef} />
 
             <form className="message-input-container" onSubmit={handleSubmit}>
@@ -274,76 +403,106 @@ export function ChatMain({ activeChat, messages, onSendMessage, currentUser, cha
                     className="message-input"
                     placeholder={placeholder}
                     value={messageText}
-                    onChange={(e) => setMessageText(e.target.value)}
+                    onChange={handleInputChange}
+                    disabled={connectionStatus !== 'connected'}
                 />
-                <button type="submit" className="send-button">Send</button>
+                <button
+                    type="submit"
+                    className="send-button"
+                    disabled={connectionStatus !== 'connected' || !messageText.trim()}
+                >
+                    Send
+                </button>
             </form>
         </div>
     )
 }
 
-function MessageList({ messages, currentUser, lastTimeShown, setLastTimeShown }) {
-    const parseTime = (timeStr) => {
-        const [time, period] = timeStr.split(' ')
-        const [hours, minutes] = time.split(':').map(Number)
-        let hour24 = hours
-        if (period === 'PM' && hours !== 12) hour24 += 12
-        if (period === 'AM' && hours === 12) hour24 = 0
-        return hour24 * 60 + minutes
-    }
-
-    const shouldShowTime = (currentTime, lastTime) => {
-        if (!lastTime) return true
-        const currentMinutes = parseTime(currentTime)
-        const lastMinutes = parseTime(lastTime)
-        return Math.abs(currentMinutes - lastMinutes) > 60 // Show time if more than 1 hour gap
-    }
+function MessageList({ messages, currentUser, onAddReaction }) {
+    console.log('[MESSAGES] Rendering message list', { count: messages.length })
 
     return (
         <div className="messages-container">
-            <StarryBackground isDarkMode={true} />
-            {messages.map((msg, index) => {
-                const showTime = shouldShowTime(msg.time, index > 0 ? messages[index - 1].time : null)
-
-                return (
-                    <React.Fragment key={msg.id}>
-                        {showTime && !msg.isSystem && (
-                            <div className="time-separator">
-                                <span>{msg.time}</span>
-                            </div>
-                        )}
-                        <Message message={msg} currentUser={currentUser} />
-                    </React.Fragment>
-                )
-            })}
+            {messages.map(msg => (
+                <Message
+                    key={msg.id}
+                    message={msg}
+                    currentUser={currentUser}
+                    onAddReaction={onAddReaction}
+                />
+            ))}
         </div>
     )
 }
 
-function Message({ message, currentUser }) {
+function Message({ message, currentUser, onAddReaction }) {
+    const [showEmojiPicker, setShowEmojiPicker] = useState(false)
     const isOwn = message.user === currentUser
     const isSystem = message.isSystem
+    const messageClass = `chat-message ${isSystem ? 'system-message' : ''} ${isOwn ? 'own-message' : ''}`
+    const initial = message.user ? message.user[0].toUpperCase() : '?'
+
+    const handleReaction = (emoji) => {
+        console.log('[REACTION] Adding reaction', { messageId: message.id, emoji })
+        if (onAddReaction) {
+            onAddReaction(message.id, emoji)
+        }
+        setShowEmojiPicker(false)
+    }
 
     if (isSystem) {
         return (
-            <div className="system-message">
+            <div className={messageClass}>
                 <span className="message-text">{message.text}</span>
             </div>
         )
     }
 
     return (
-        <div className={`chat-message ${isOwn ? 'own-message' : ''}`}>
+        <div className={messageClass}>
             {!isOwn && (
                 <div className="message-avatar">
-                    {message.user[0].toUpperCase()}
+                    {initial}
                 </div>
             )}
             <div className="message-wrapper">
-                <div className="message-bubble">
+                <div className="message-bubble" onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                     <div className="message-text">{message.text}</div>
+                    {isOwn && message.is_read && (
+                        <span className="read-receipt">Read</span>
+                    )}
+                    {showEmojiPicker && (
+                        <div className="emoji-picker">
+                            {['👍', '❤️', '😄', '😮', '😢', '🎉'].map(emoji => (
+                                <button
+                                    key={emoji}
+                                    className="emoji-option"
+                                    onClick={(e) => {
+                                        e.stopPropagation()
+                                        handleReaction(emoji)
+                                    }}
+                                >
+                                    {emoji}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
-                <div className="message-sender">{message.user}</div>
+                {!isOwn && <div className="message-sender">{message.user}</div>}
+                <span className="message-time">{message.timestamp ? getRelativeTime(message.timestamp) : message.time}</span>
+                {message.reactions && Object.keys(message.reactions).length > 0 && (
+                    <div className="message-reactions">
+                        {Object.entries(message.reactions).map(([emoji, users]) => (
+                            <button
+                                key={emoji}
+                                className="reaction-button"
+                                onClick={() => handleReaction(emoji)}
+                            >
+                                {emoji} {users.length}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     )
