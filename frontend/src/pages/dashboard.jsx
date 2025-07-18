@@ -2,131 +2,101 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { StarryBackground, ChatSidebar, ChatMain } from '../helpers/components.jsx'
 import {
-    clearTokens,
-    mockChannels,
-    mockDirectMessages,
-    getInitialMessages,
-    getChannelName,
-    getUsername,
-    connectWebSocket
+    connectWebSocket,
+    setupWebSocketHandlers,
+    handleLogout,
+    sendMessage,
+    initializeDashboardData,
+    getChatDisplayName,
+    createNewMessage,
+    scheduleAIResponse,
+    addMessageToChat
 } from '../helpers/utility.jsx'
 
 function Dashboard() {
     const navigate = useNavigate()
-    const [activeChannel, setActiveChannel] = useState('general')
-    const [sidebarWidth, setSidebarWidth] = useState(240)
+
+    // Core state
+    const [activeChat, setActiveChat] = useState('general')
+    const [allMessages, setAllMessages] = useState({})
     const [username, setUsername] = useState('')
-    const [messages, setMessages] = useState({})
     const [connectionStatus, setConnectionStatus] = useState('connecting')
+    const [channels, setChannels] = useState([])
+    const [directMessages, setDirectMessages] = useState([])
+
+    // Refs
     const socketRef = useRef(null)
 
+    // Derived state
+    const activeMessages = allMessages[activeChat] || []
+    const chatDisplayName = getChatDisplayName(activeChat, channels, directMessages)
+
+
     useEffect(() => {
-        const storedUsername = getUsername()
+
+        // Load data
+        const { username: storedUsername, initialMessages, channels, directMessages } = initializeDashboardData()
         setUsername(storedUsername)
+        setAllMessages(initialMessages)
+        setChannels(channels)
+        setDirectMessages(directMessages)
 
-        const initialMessages = {}
-        const allChannels = [...mockChannels, ...mockDirectMessages]
-        allChannels.forEach(channel => {
-            initialMessages[channel.id] = getInitialMessages(channel.id, storedUsername)
-        })
-        setMessages(initialMessages)
-
+        // Connect WebSocket
         const socket = connectWebSocket((status, socketInstance) => {
             setConnectionStatus(status)
 
             if (status === 'connected' && socketInstance) {
                 socketRef.current = socketInstance
 
-                socketInstance.on('connection_response', (data) => {
-                    // Handle connection response
+                // Setup message handlers
+                setupWebSocketHandlers(socketInstance, {
+                    onMessage: handleIncomingMessage,
+                    onConnectionResponse: (data) => console.log('Connected:', data)
                 })
-
-                socketInstance.on('message', (data) => {
-                    // Handle incoming message
-                })
-            } else if (status === 'error' || status === 'auth_error' || status === 'token_expired') {
-                if (status === 'auth_error' || status === 'token_expired') {
-                    clearTokens()
-                    navigate('/login')
-                }
-            }
+            } else if (status === 'auth_error' || status === 'token_expired')
+                handleLogout(null, navigate)
         })
 
-        return () => {
-            if (socketRef.current) {
-                socketRef.current.disconnect()
-            }
-        }
-    }, [navigate])
+        // Cleanup
+        return () => {if (socketRef.current) socketRef.current.disconnect()}}, [navigate])
 
-    const handleLogout = () => {
-        if (socketRef.current) {
-            socketRef.current.disconnect()
-        }
-        clearTokens()
-        navigate('/login')
+    // Message handlers
+    const handleIncomingMessage = (data) => {
+        console.log('Received message:', data)
     }
 
     const handleSendMessage = (text) => {
-        const newMessage = {
-            id: Date.now(),
-            user: username,
-            text: text,
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
 
-        setMessages(prev => ({
-            ...prev,
-            [activeChannel]: [...(prev[activeChannel] || []), newMessage]
-        }))
+        const newMessage = createNewMessage(username, text)
+        setAllMessages(prev => addMessageToChat(prev, activeChat, newMessage))
+        sendMessage(socketRef.current, activeChat, text, connectionStatus)
 
-        if (socketRef.current && connectionStatus === 'connected') {
-            socketRef.current.emit('message', {
-                channel: activeChannel,
-                text: text
-            })
-        }
+        // Handle AI chat
+        if (activeChat === 'erik_ai')
+            scheduleAIResponse((aiResponse) =>
+                setAllMessages(prev => addMessageToChat(prev, 'erik_ai', aiResponse)))
 
-        if (activeChannel === 'erik_ai') {
-            setTimeout(() => {
-                const aiResponse = {
-                    id: Date.now() + 1,
-                    user: 'erik_ai',
-                    text: 'I understand your message. How can I help you further?',
-                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                    isAI: true
-                }
-                setMessages(prev => ({
-                    ...prev,
-                    erik_ai: [...prev.erik_ai, aiResponse]
-                }))
-            }, 1000)
-        }
     }
-
-    const currentMessages = messages[activeChannel] || []
-    const channelName = getChannelName(activeChannel, mockChannels, mockDirectMessages)
 
     return (
         <div className="chat-container">
             <StarryBackground />
 
             <ChatSidebar
-                activeChannel={activeChannel}
-                onChannelSelect={setActiveChannel}
-                channels={mockChannels}
-                directMessages={mockDirectMessages}
-                onLogout={handleLogout}
-                sidebarWidth={sidebarWidth}
+                activeChat={activeChat}
+                onChatSelect={setActiveChat}
+                channels={channels}
+                directMessages={directMessages}
+                onLogout={() => handleLogout(socketRef.current, navigate)}
                 username={username}
             />
 
             <ChatMain
-                activeChannel={activeChannel}
-                messages={currentMessages}
+                activeChat={activeChat}
+                messages={activeMessages}
                 onSendMessage={handleSendMessage}
                 currentUser={username}
-                channelName={channelName}
+                chatDisplayName={chatDisplayName}
             />
         </div>
     )

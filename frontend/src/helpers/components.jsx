@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 function AuthForm({ onSubmit, submitText, isLoading = false }) {
@@ -71,18 +71,13 @@ function BackButton({ to = "/", text = "Back" }) {
 
 export function TextLogo() {
     return (
-        <span style={{
-            fontSize: '24px',
-            fontWeight: 'bold',
-            color: '#991b1b',
-            letterSpacing: '-0.02em'
-        }}>
-            CT
-        </span>
+        <div className="logo-circle">
+            <span>CT</span>
+        </div>
     )
 }
 
-export function StarryBackground() {
+export function StarryBackground({ isDarkMode = false }) {
     const canvasRef = useRef(null)
 
     useEffect(() => {
@@ -94,20 +89,20 @@ export function StarryBackground() {
         canvas.height = window.innerHeight
 
         const stars = []
-        const starCount = 800
+        const starCount = isDarkMode ? 400 : 800
 
         for (let i = 0; i < starCount; i++) {
             stars.push({
                 x: Math.random() * canvas.width,
                 y: Math.random() * canvas.height,
-                size: Math.random() * 1 + 0.2,
-                brightness: Math.random() * 0.5 + 0.3,
+                size: Math.random() * 0.8 + 0.2,
+                brightness: isDarkMode ? Math.random() * 0.3 + 0.1 : Math.random() * 0.5 + 0.3,
                 twinkleSpeed: Math.random() * 0.015 + 0.005
             })
         }
 
         const animate = () => {
-            ctx.fillStyle = '#0a0a0a'
+            ctx.fillStyle = isDarkMode ? '#000000' : '#000000'
             ctx.fillRect(0, 0, canvas.width, canvas.height)
 
             stars.forEach(star => {
@@ -117,7 +112,7 @@ export function StarryBackground() {
                 ctx.fill()
 
                 star.brightness += (Math.random() - 0.5) * star.twinkleSpeed
-                star.brightness = Math.max(0.1, Math.min(0.8, star.brightness))
+                star.brightness = Math.max(0.1, Math.min(isDarkMode ? 0.4 : 0.8, star.brightness))
             })
 
             requestAnimationFrame(animate)
@@ -132,11 +127,12 @@ export function StarryBackground() {
 
         window.addEventListener('resize', handleResize)
         return () => window.removeEventListener('resize', handleResize)
-    }, [])
+    }, [isDarkMode])
 
     return (
         <canvas
             ref={canvasRef}
+            className="starry-messages"
             style={{
                 position: 'absolute',
                 top: 0,
@@ -151,45 +147,11 @@ export function StarryBackground() {
 }
 
 // Chat Components
-export function ChatSidebar({ activeChannel, onChannelSelect, channels, directMessages, onLogout, sidebarWidth, username }) {
-    const [isResizing, setIsResizing] = useState(false)
-    const sidebarRef = useRef(null)
-
-    const handleMouseDown = (e) => {
-        setIsResizing(true)
-        e.preventDefault()
-    }
-
-    useEffect(() => {
-        const handleMouseMove = (e) => {
-            if (!isResizing) return
-            const newWidth = e.clientX
-            if (newWidth >= 180 && newWidth <= 350) {
-                sidebarRef.current.style.width = `${newWidth}px`
-            }
-        }
-
-        const handleMouseUp = () => {
-            setIsResizing(false)
-        }
-
-        if (isResizing) {
-            document.addEventListener('mousemove', handleMouseMove)
-            document.addEventListener('mouseup', handleMouseUp)
-        }
-
-        return () => {
-            document.removeEventListener('mousemove', handleMouseMove)
-            document.removeEventListener('mouseup', handleMouseUp)
-        }
-    }, [isResizing])
-
+export function ChatSidebar({ activeChat, onChatSelect, channels, directMessages, onLogout, username }) {
     const userInitial = username ? username[0].toUpperCase() : 'U'
 
     return (
-        <div className="chat-sidebar" ref={sidebarRef} style={{ width: sidebarWidth }}>
-            <div className="sidebar-resize" onMouseDown={handleMouseDown}></div>
-
+        <div className="chat-sidebar">
             <div className="sidebar-header">
                 <h2>
                     <TextLogo />
@@ -204,19 +166,20 @@ export function ChatSidebar({ activeChannel, onChannelSelect, channels, directMe
                 </div>
             </div>
 
-            <ChannelSection
+            <ChatSection
                 title="Chatrooms"
                 items={channels}
-                activeId={activeChannel}
-                onSelect={onChannelSelect}
+                activeId={activeChat}
+                onSelect={onChatSelect}
                 showAdd={true}
+                isChannel={true}
             />
 
-            <ChannelSection
+            <ChatSection
                 title="Direct Messages"
                 items={directMessages}
-                activeId={activeChannel}
-                onSelect={onChannelSelect}
+                activeId={activeChat}
+                onSelect={onChatSelect}
                 isDM={true}
             />
 
@@ -229,7 +192,7 @@ export function ChatSidebar({ activeChannel, onChannelSelect, channels, directMe
     )
 }
 
-function ChannelSection({ title, items, activeId, onSelect, showAdd, isDM }) {
+function ChatSection({ title, items, activeId, onSelect, showAdd, isDM, isChannel }) {
     return (
         <div className="channel-section">
             <div className="section-header">
@@ -238,12 +201,13 @@ function ChannelSection({ title, items, activeId, onSelect, showAdd, isDM }) {
             </div>
             <div className="channel-list">
                 {items.map(item => (
-                    <ChannelItem
+                    <ChatItem
                         key={item.id}
                         item={item}
                         isActive={activeId === item.id}
                         onClick={() => !item.disabled && onSelect(item.id)}
                         isDM={isDM}
+                        isChannel={isChannel}
                     />
                 ))}
             </div>
@@ -251,7 +215,7 @@ function ChannelSection({ title, items, activeId, onSelect, showAdd, isDM }) {
     )
 }
 
-function ChannelItem({ item, isActive, onClick, isDM }) {
+function ChatItem({ item, isActive, onClick, isDM, isChannel }) {
     const initial = item.name ? item.name[0].toUpperCase() : '?'
 
     return (
@@ -259,17 +223,21 @@ function ChannelItem({ item, isActive, onClick, isDM }) {
             className={`channel-item ${isActive ? 'active' : ''} ${item.disabled ? 'disabled' : ''}`}
             onClick={onClick}
         >
-            <div className={`channel-avatar ${!isDM ? 'group' : ''}`}>
-                {initial}
-            </div>
+            {isChannel && <span className="channel-prefix">#</span>}
+            {isDM && (
+                <div className="dm-avatar">
+                    {initial}
+                </div>
+            )}
             <span className="channel-name">{item.name}</span>
         </div>
     )
 }
 
-export function ChatMain({ activeChannel, messages, onSendMessage, currentUser, channelName }) {
+export function ChatMain({ activeChat, messages, onSendMessage, currentUser, chatDisplayName }) {
     const [messageText, setMessageText] = useState('')
     const messagesEndRef = useRef(null)
+    const [lastTimeShown, setLastTimeShown] = useState(null)
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -287,19 +255,17 @@ export function ChatMain({ activeChannel, messages, onSendMessage, currentUser, 
         }
     }
 
-    const isDM = activeChannel && (activeChannel.startsWith('erik') || !['general', 'random', 'tech', 'gaming'].includes(activeChannel))
-    const placeholder = isDM ? `Message ${channelName}` : `Message #${channelName}`
+    const isDM = activeChat && (activeChat.startsWith('erik') || !['general', 'random', 'tech', 'gaming'].includes(activeChat))
+    const placeholder = isDM ? `Message ${chatDisplayName}` : `Message #${chatDisplayName}`
 
     return (
         <div className="chat-main">
-            <div className="chat-header">
-                <h3>{isDM ? channelName : `#${channelName}`}</h3>
-                <div className="header-actions">
-                    <button className="header-button">⚙️</button>
-                </div>
-            </div>
-
-            <MessageList messages={messages} currentUser={currentUser} />
+            <MessageList
+                messages={messages}
+                currentUser={currentUser}
+                lastTimeShown={lastTimeShown}
+                setLastTimeShown={setLastTimeShown}
+            />
             <div ref={messagesEndRef} />
 
             <form className="message-input-container" onSubmit={handleSubmit}>
@@ -316,12 +282,40 @@ export function ChatMain({ activeChannel, messages, onSendMessage, currentUser, 
     )
 }
 
-function MessageList({ messages, currentUser }) {
+function MessageList({ messages, currentUser, lastTimeShown, setLastTimeShown }) {
+    const parseTime = (timeStr) => {
+        const [time, period] = timeStr.split(' ')
+        const [hours, minutes] = time.split(':').map(Number)
+        let hour24 = hours
+        if (period === 'PM' && hours !== 12) hour24 += 12
+        if (period === 'AM' && hours === 12) hour24 = 0
+        return hour24 * 60 + minutes
+    }
+
+    const shouldShowTime = (currentTime, lastTime) => {
+        if (!lastTime) return true
+        const currentMinutes = parseTime(currentTime)
+        const lastMinutes = parseTime(lastTime)
+        return Math.abs(currentMinutes - lastMinutes) > 60 // Show time if more than 1 hour gap
+    }
+
     return (
         <div className="messages-container">
-            {messages.map(msg => (
-                <Message key={msg.id} message={msg} currentUser={currentUser} />
-            ))}
+            <StarryBackground isDarkMode={true} />
+            {messages.map((msg, index) => {
+                const showTime = shouldShowTime(msg.time, index > 0 ? messages[index - 1].time : null)
+
+                return (
+                    <React.Fragment key={msg.id}>
+                        {showTime && !msg.isSystem && (
+                            <div className="time-separator">
+                                <span>{msg.time}</span>
+                            </div>
+                        )}
+                        <Message message={msg} currentUser={currentUser} />
+                    </React.Fragment>
+                )
+            })}
         </div>
     )
 }
@@ -329,30 +323,27 @@ function MessageList({ messages, currentUser }) {
 function Message({ message, currentUser }) {
     const isOwn = message.user === currentUser
     const isSystem = message.isSystem
-    const messageClass = `chat-message ${isSystem ? 'system-message' : ''} ${isOwn ? 'own-message' : ''}`
-    const initial = message.user ? message.user[0].toUpperCase() : '?'
 
     if (isSystem) {
         return (
-            <div className={messageClass}>
-                <div className="message-bubble">
-                    <div className="message-text">{message.text}</div>
-                </div>
+            <div className="system-message">
+                <span className="message-text">{message.text}</span>
             </div>
         )
     }
 
     return (
-        <div className={messageClass}>
-            <div className="message-avatar">
-                {initial}
-            </div>
-            <div className="message-bubble">
-                <div className="message-header">
-                    <span className="message-user">{message.user}</span>
-                    <span className="message-time">{message.time}</span>
+        <div className={`chat-message ${isOwn ? 'own-message' : ''}`}>
+            {!isOwn && (
+                <div className="message-avatar">
+                    {message.user[0].toUpperCase()}
                 </div>
-                <div className="message-text">{message.text}</div>
+            )}
+            <div className="message-wrapper">
+                <div className="message-bubble">
+                    <div className="message-text">{message.text}</div>
+                </div>
+                <div className="message-sender">{message.user}</div>
             </div>
         </div>
     )

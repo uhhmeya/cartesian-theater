@@ -1,5 +1,7 @@
 import {useState} from "react";
+import { io } from 'socket.io-client'
 
+// API Request Functions
 const getNewAccessToken = async () => {
     const refreshToken = getRefreshToken();
     if (!refreshToken) return null;
@@ -96,6 +98,7 @@ export async function apiRequest(endpoint, payload, isRetry = false) {
     }
 }
 
+// Token Management
 export const saveTokens = (accessToken, refreshToken) => {
     localStorage.setItem('access_token', accessToken);
     localStorage.setItem('refresh_token', refreshToken);
@@ -130,6 +133,7 @@ export const isTokenExpired = (token) => {
     }
 };
 
+// Error Handling
 export const errorMap = {
     bad_format: {
         label: "Bad Format",
@@ -166,8 +170,7 @@ export const showMessage = (messageText, setMessage, duration = 4000) => {
     setTimeout(() => setMessage(''), duration)
 }
 
-import { io } from 'socket.io-client'
-
+// WebSocket Connection
 export const connectWebSocket = (onStatusChange) => {
     const token = getAccessToken();
 
@@ -212,13 +215,67 @@ export const connectWebSocket = (onStatusChange) => {
         }
     });
 
-    socket.on('connection_response', (data) => {
-        // Handle connection response
-    });
-
     return socket;
 }
 
+// WebSocket Setup Functions
+export const setupWebSocketHandlers = (socket, handlers) => {
+    // Set up connection response handler
+    socket.on('connection_response', (data) => {
+        console.log('Connected to server:', data)
+        if (handlers.onConnectionResponse) {
+            handlers.onConnectionResponse(data)
+        }
+    })
+
+    // Set up message handler
+    socket.on('message', (data) => {
+        if (handlers.onMessage) {
+            handlers.onMessage(data)
+        }
+    })
+}
+
+// Dashboard Actions
+export const handleLogout = (socket, navigate) => {
+    if (socket) {
+        socket.disconnect()
+    }
+    clearTokens()
+    navigate('/login')
+}
+
+export const sendMessage = (socket, activeChat, text, connectionStatus) => {
+    if (socket && connectionStatus === 'connected') {
+        socket.emit('message', {
+            channel: activeChat,
+            text: text
+        })
+        return true
+    }
+    return false
+}
+
+export const initializeDashboardData = () => {
+    const username = getUsername()
+    const { channels, directMessages } = getChannelsAndDMs()
+
+    // Initialize messages for all chats
+    const initialMessages = {}
+    const allChats = [...channels, ...directMessages]
+    allChats.forEach(chat => {
+        initialMessages[chat.id] = getInitialMessagesForChat(chat.id, username)
+    })
+
+    return {
+        username,
+        initialMessages,
+        channels,
+        directMessages
+    }
+}
+
+// Custom Hooks
 export const useMessage = (duration = 5000) => {
     const [message, setMessage] = useState('')
 
@@ -231,6 +288,7 @@ export const useMessage = (duration = 5000) => {
     return [message, showMessage, () => setMessage('')]
 }
 
+// User Management
 export const saveUsername = (username) => {
     localStorage.setItem('username', username);
 };
@@ -239,18 +297,58 @@ export const getUsername = () => {
     return localStorage.getItem('username') || 'User';
 };
 
-export const mockChannels = [
+// Chat Data
+const mockChannels = [
     { id: 'general', name: 'general' },
     { id: 'random', name: 'random' },
     { id: 'tech', name: 'tech' },
     { id: 'gaming', name: 'gaming' }
 ]
 
-export const mockDirectMessages = [
+const mockDirectMessages = [
     { id: 'erik_ai', name: 'erik_ai', isAI: true }
 ]
 
-export const createWelcomeMessage = (username) => {
+export const getChannelsAndDMs = () => {
+    return {
+        channels: mockChannels,
+        directMessages: mockDirectMessages
+    }
+}
+
+// Message Management
+export const addMessageToChat = (currentMessages, chatId, newMessage) => {
+    return {
+        ...currentMessages,
+        [chatId]: [...(currentMessages[chatId] || []), newMessage]
+    }
+}
+export const createNewMessage = (username, text) => {
+    return {
+        id: Date.now(),
+        user: username,
+        text: text,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    }
+}
+
+export const createAIResponse = () => {
+    return {
+        id: Date.now() + 1,
+        user: 'erik_ai',
+        text: 'I understand your message. How can I help you further?',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        isAI: true
+    }
+}
+
+export const scheduleAIResponse = (callback, delay = 1000) => {
+    setTimeout(() => {
+        callback(createAIResponse())
+    }, delay)
+}
+
+const createWelcomeMessage = (username) => {
     return {
         id: Date.now(),
         user: 'erik_ai',
@@ -260,7 +358,7 @@ export const createWelcomeMessage = (username) => {
     }
 }
 
-export const createJoinMessage = (username) => {
+const createJoinMessage = (username) => {
     return {
         id: Date.now() + 1,
         text: `${username} entered the chat`,
@@ -269,7 +367,8 @@ export const createJoinMessage = (username) => {
     }
 }
 
-export const getInitialMessages = (channelId, username) => {
+// Initial Messages
+export const getInitialMessagesForChat = (chatId, username) => {
     const messages = {
         general: [
             {
@@ -291,13 +390,7 @@ export const getInitialMessages = (channelId, username) => {
                 time: '10:20 AM'
             },
             createJoinMessage(username),
-            {
-                id: Date.now() + 2,
-                user: 'erik_ai',
-                text: `Welcome ${username}!`,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                isAI: true
-            }
+            createWelcomeMessage(username)
         ],
         random: [
             {
@@ -313,13 +406,7 @@ export const getInitialMessages = (channelId, username) => {
                 time: '9:05 PM'
             },
             createJoinMessage(username),
-            {
-                id: Date.now() + 2,
-                user: 'erik_ai',
-                text: `Welcome ${username}!`,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                isAI: true
-            }
+            createWelcomeMessage(username)
         ],
         tech: [
             {
@@ -335,13 +422,7 @@ export const getInitialMessages = (channelId, username) => {
                 time: '2:01 PM'
             },
             createJoinMessage(username),
-            {
-                id: Date.now() + 2,
-                user: 'erik_ai',
-                text: `Welcome ${username}!`,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                isAI: true
-            }
+            createWelcomeMessage(username)
         ],
         gaming: [
             {
@@ -351,21 +432,16 @@ export const getInitialMessages = (channelId, username) => {
                 time: '3:00 PM'
             },
             createJoinMessage(username),
-            {
-                id: Date.now() + 2,
-                user: 'erik_ai',
-                text: `Welcome ${username}!`,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                isAI: true
-            }
+            createWelcomeMessage(username)
         ],
         erik_ai: []
     }
 
-    return messages[channelId] || [createJoinMessage(username)]
+    return messages[chatId] || [createJoinMessage(username)]
 }
 
-export const getChannelName = (channelId, channels, dms) => {
-    const channel = [...channels, ...dms].find(ch => ch.id === channelId)
-    return channel ? channel.name : channelId
+// Chat Utilities
+export const getChatDisplayName = (chatId, channels, dms) => {
+    const chat = [...channels, ...dms].find(ch => ch.id === chatId)
+    return chat ? chat.name : chatId
 }
