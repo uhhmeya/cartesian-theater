@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { Stars } from '../components/Stars.jsx'
 import './styles/homepage.css'
 
-
+///test
 function Homepage() {
     const navigate = useNavigate()
 
