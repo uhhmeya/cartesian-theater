@@ -44,6 +44,16 @@ export function Stars() {
         const handleResize = () => {
             canvas.width = window.innerWidth
             canvas.height = window.innerHeight
+            stars.length = 0
+            for (let i = 0; i < 800; i++) {
+                stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 1 + 0.2,
+                    brightness: Math.random() * 0.5 + 0.3,
+                    twinkleSpeed: Math.random() * 0.015 + 0.005
+                })
+            }
         }
 
         window.addEventListener('resize', handleResize)

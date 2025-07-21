@@ -1,40 +1,64 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Stars } from '../components/Stars.jsx'
-import { connectWebSocket, handleLogout } from '../utility.jsx'
+import { connectWebSocket } from '../services/websocket'
+import { handleLogout } from '../services/auth'
 import './styles/dashboard.css'
 
 function Dashboard() {
 
     const navigate = useNavigate()
+
+    //message = {user, text, time}
+    //messages = array of all messages
     const [messages, setMessages] = useState([])
-    const [messageText, setMessageText] = useState('')
-    const [username] = useState(localStorage.getItem('username') || 'User')
+
+    //inputText = text currently being typed in input field
+    const [inputText, setInputText] = useState('')
+
+    //username of the current user that is logged in
+    const [myUsername] = useState(localStorage.getItem('username') || 'User')
+
     const [connectionStatus, setConnectionStatus] = useState('connecting')
     const socketRef = useRef(null)
 
+
+
     useEffect(() => {
-        const socket = connectWebSocket((status, socketInstance) => {
+
+        const access_token = localStorage.getItem('access_token')
+
+        //connectWebSocket(inline-function)
+        //connectWebSocket() sends websocket connection request to backend
+        //The inline code is called when backend sends response
+        const socket = connectWebSocket(access_token, (status, socketInstance) => {
+
             setConnectionStatus(status)
             if (status === 'connected' && socketInstance) {
                 socketRef.current = socketInstance
+
+                //when backend sends message from websocket, the message is stored in messages
                 socketInstance.on('message', data => setMessages(prev => [...prev, data]))
-                socketInstance.on('connection_response', data => {
-                    setMessages([{ user: 'erik_ai', text: 'Hello! How can I help you today?', timestamp: new Date().toISOString() }])
-                })
+                //when websocket successfully connects, erik says hi
+                socketInstance.on('connection_response', data => {setMessages([{ user: 'erik_ai', text: 'Hi?', timestamp: new Date().toISOString() }])})
             }
         })
+        //websocket is closed when dashboard dismounts
         return () => socket?.disconnect()
     }, [])
 
-    const handleSubmit = e => {
+    const handleSendMessage = e => {
         e.preventDefault()
-        if (messageText.trim() && socketRef.current) {
-            setMessages(prev => [...prev, { user: username, text: messageText, timestamp: new Date().toISOString() }])
-            socketRef.current.emit('message', { text: messageText })
-            setMessageText('')
+        if (inputText.trim() && socketRef.current) {
+            //adds outgoing messages to messages array
+            setMessages(prev => [...prev, { user: myUsername, text: inputText, timestamp: new Date().toISOString() }])
+            //sends messages to backend
+            socketRef.current.emit('message', { text: inputText })
+            setInputText('')
         }
     }
+
+    //sends message to backend --> backend responds --> backend's response added to messages array --> messages are displayed
 
     return (
         <div className="chat-container">
@@ -44,8 +68,8 @@ function Dashboard() {
                 <div className="sidebar-header">
                     <h2><div className="logo-circle"><span>CT</span></div>Cartesian Theater</h2>
                     <div className="user-menu">
-                        <div className="user-profile">{username[0].toUpperCase()}<div className="user-status online"></div></div>
-                        <span>{username}</span>
+                        <div className="user-profile">{myUsername[0].toUpperCase()}<div className="user-status online"></div></div>
+                        <span>{myUsername}</span>
                     </div>
                 </div>
 
@@ -73,20 +97,20 @@ function Dashboard() {
 
                 <div className="messages-container">
                     {messages.map((msg, i) => (
-                        <div key={i} className={`chat-message ${msg.user === username ? 'own-message' : ''}`}>
-                            {msg.user !== username && <div className="message-avatar">{msg.user[0].toUpperCase()}</div>}
+                        <div key={i} className={`chat-message ${msg.user === myUsername ? 'own-message' : ''}`}>
+                            {msg.user !== myUsername && <div className="message-avatar">{msg.user[0].toUpperCase()}</div>}
                             <div className="message-wrapper">
                                 <div className="message-bubble"><div className="message-text">{msg.text}</div></div>
-                                {msg.user !== username && <div className="message-sender">{msg.user}</div>}
+                                {msg.user !== myUsername && <div className="message-sender">{msg.user}</div>}
                             </div>
                         </div>
                     ))}
                 </div>
 
-                <form className="message-input-container" onSubmit={handleSubmit}>
-                    <input type="text" className="message-input" placeholder="Message erik_ai" value={messageText}
-                           onChange={e => setMessageText(e.target.value)} disabled={connectionStatus !== 'connected'} />
-                    <button type="submit" className="send-button" disabled={connectionStatus !== 'connected' || !messageText.trim()}>Send</button>
+                <form className="message-input-container" onSubmit={handleSendMessage}>
+                    <input type="text" className="message-input" placeholder="Message erik_ai" value={inputText}
+                           onChange={e => setInputText(e.target.value)} disabled={connectionStatus !== 'connected'} />
+                    <button type="submit" className="send-button" disabled={connectionStatus !== 'connected' || !inputText.trim()}>Send</button>
                 </form>
             </div>
         </div>

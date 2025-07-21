@@ -7,6 +7,7 @@ from threading import Timer
 
 auth = Blueprint('auth', __name__)
 
+#public
 @auth.route('/signin', methods=['POST'])
 def signin():
     data = request.get_json()
@@ -19,7 +20,7 @@ def signin():
     user = User.query.filter_by(username=username).first()
 
     if not user or not bcrypt.check_password_hash(user.password_hash, password):
-        return jsonify({"success": False, "message": "Invalid username or password"}), 401
+        return jsonify({"success": False, "message": "Bad credentials"}), 401
 
     return jsonify({
         "success": True,
@@ -27,6 +28,7 @@ def signin():
         "refresh_token": create_refresh_token(identity=str(user.id))
     }), 200
 
+#public
 @auth.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
@@ -34,7 +36,7 @@ def signup():
     password = data.get('password', '')
 
     if not username or not password or len(username) < 4 or len(password) < 8:
-        return jsonify({"success": False, "message": "Username must be at least 4 characters and password at least 8 characters"}), 400
+        return jsonify({"success": False, "message": "Username min 4 chars, password min 8 chars"}), 400
 
     if User.query.filter_by(username=username).first():
         return jsonify({"success": False, "message": "Username already exists"}), 409
@@ -45,6 +47,7 @@ def signup():
 
     return jsonify({"success": True}), 201
 
+#public
 @auth.route('/refresh', methods=['POST'])
 def refresh():
     refresh_token = request.get_json().get('refresh_token')
@@ -62,13 +65,13 @@ def refresh():
 
 @socketio.on('connect')
 def handle_connect():
-    token = request.args.get('token')
-    if not token:
+    access_token = request.args.get('token')
+    if not access_token:
         disconnect()
         return False
 
     try:
-        decoded = decode_token(token)
+        decoded = decode_token(access_token)
         user_id = int(decoded['sub'])
         user = User.query.get(user_id)
         if not user:
