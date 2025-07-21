@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Stars } from '../components/Stars.jsx'
-import { apiRequest, saveUsername} from '../helpers/utility.jsx'
+import { apiRequest } from '../utility.jsx'
 
 function Login() {
     const navigate = useNavigate()

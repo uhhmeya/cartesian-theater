@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Stars } from '../components/Stars.jsx'
-import { connectWebSocket, handleLogout } from '../helpers/utility.jsx'
+import { connectWebSocket, handleLogout } from '../utility.jsx'
 import './styles/dashboard.css'
 
 function Dashboard() {
