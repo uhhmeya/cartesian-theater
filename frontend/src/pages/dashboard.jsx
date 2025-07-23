@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Stars } from '../components/Stars.jsx'
 import { connectWebSocket } from '../services/websocket'
 import { handleLogout } from '../services/auth'
 import './styles/dashboard.css'
@@ -21,8 +20,15 @@ function Dashboard() {
 
     const [connectionStatus, setConnectionStatus] = useState('connecting')
     const socketRef = useRef(null)
+    const messagesEndRef = useRef(null)
 
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }
 
+    useEffect(() => {
+        scrollToBottom()
+    }, [messages])
 
     useEffect(() => {
 
@@ -40,7 +46,7 @@ function Dashboard() {
                 //when backend sends message from websocket, the message is stored in messages
                 socketInstance.on('message', data => setMessages(prev => [...prev, data]))
                 //when websocket successfully connects, erik says hi
-                socketInstance.on('connection_response', data => {setMessages([{ user: 'erik_ai', text: 'Hi?', timestamp: new Date().toISOString() }])})
+                socketInstance.on('connection_response', data => console.log('Connected:', data))
             }
         })
         //websocket is closed when dashboard dismounts
@@ -58,11 +64,9 @@ function Dashboard() {
         }
     }
 
-    //sends message to backend --> backend responds --> backend's response added to messages array --> messages are displayed
-
     return (
         <div className="chat-container">
-            <Stars />
+
 
             <div className="chat-sidebar">
                 <div className="sidebar-header">
@@ -105,11 +109,23 @@ function Dashboard() {
                             </div>
                         </div>
                     ))}
+                    <div ref={messagesEndRef} />
                 </div>
 
                 <form className="message-input-container" onSubmit={handleSendMessage}>
-                    <input type="text" className="message-input" placeholder="Message erik_ai" value={inputText}
-                           onChange={e => setInputText(e.target.value)} disabled={connectionStatus !== 'connected'} />
+                    <div
+                        className="message-input"
+                        contentEditable
+                        placeholder="Message erik_ai"
+                        onInput={e => setInputText(e.target.textContent)}
+                        onKeyDown={e => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault()
+                                handleSendMessage(e)
+                                e.target.textContent = ''
+                            }
+                        }}
+                    />
                     <button type="submit" className="send-button" disabled={connectionStatus !== 'connected' || !inputText.trim()}>Send</button>
                 </form>
             </div>

@@ -1,7 +1,19 @@
-from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity
+from datetime import datetime
+from threading import Timer
+from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity, decode_token
 from functools import wraps
 from flask import jsonify
-from src.misc import User
+from extensions import User, socketio
+
+
+def verify_access_token(token):
+    try:
+        decoded = decode_token(token)
+        user_id = int(decoded['sub'])
+        user = User.query.get(user_id)
+        return user if user else None
+    except:
+        return None
 
 def login_required(f):
     @wraps(f)
@@ -16,4 +28,5 @@ def login_required(f):
         except:
             return jsonify({"success": False, "message": "Invalid token"}), 401
     return decorated_function
+
 

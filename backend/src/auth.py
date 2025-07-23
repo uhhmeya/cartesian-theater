@@ -1,8 +1,9 @@
 from flask import Blueprint, request, jsonify, session
 from flask_socketio import emit, disconnect
 from datetime import datetime, timedelta
-from src.misc import User, socketio, db, bcrypt
+from extensions import User, socketio, db, bcrypt
 from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
+from src.utility import verify_access_token
 from threading import Timer
 
 auth = Blueprint('auth', __name__)
@@ -63,32 +64,33 @@ def refresh():
     except:
         return jsonify({"success": False, "message": "Invalid or expired refresh token"}), 401
 
+#protected
 @socketio.on('connect')
 def handle_connect():
-    access_token = request.args.get('token')
-    if not access_token:
+    token = request.args.get('token')
+    user = verify_access_token(token)
+
+    if not user:
         disconnect()
         return False
 
-    try:
-        decoded = decode_token(access_token)
-        user_id = int(decoded['sub'])
-        user = User.query.get(user_id)
-        if not user:
-            disconnect()
-            return False
+    session['user_id'] = user.id
+    session['username'] = user.username
+    sid = request.sid
 
-        session['user_id'] = user_id
-        session['username'] = user.username
+    emit('connection_response', {
+        'status': 'connected',
+        'username': user.username})
 
-        emit('connection_response', {
-            'status': 'connected',
-            'username': user.username
-        })
-        return True
-    except:
-        disconnect()
-        return False
+    def send_greeting():
+        socketio.emit('message', {
+            'user': 'erik_ai',
+            'text': 'Hi?',
+            'timestamp': datetime.utcnow().isoformat()}, to=sid)
+
+    Timer(0.5, send_greeting).start()
+
+    return True
 
 @socketio.on('disconnect')
 def handle_disconnect():
@@ -97,19 +99,9 @@ def handle_disconnect():
 @socketio.on('message')
 def handle_message(data):
     text = data.get('text')
-    username = session.get('username')
 
     emit('message', {
-        'user': username,
-        'text': text,
+        'user': 'erik_ai',
+        'text': 'Hi',
         'timestamp': datetime.utcnow().isoformat()
-    }, broadcast=True, include_self=False)
-
-    def send_erik_response():
-        emit('message', {
-            'user': 'erik_ai',
-            'text': 'Hi',
-            'timestamp': datetime.utcnow().isoformat()
-        }, broadcast=True)
-
-    Timer(2.0, send_erik_response).start()
+    })
