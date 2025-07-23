@@ -4,7 +4,7 @@ from datetime import timedelta
 from src.auth import auth
 from extensions import db, bcrypt, jwt, socketio
 
-#hi
+
 
 app = Flask(__name__)
 
