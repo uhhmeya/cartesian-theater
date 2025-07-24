@@ -47,6 +47,14 @@ function Dashboard() {
         const response = await apiRequest('/api/friend-request', { receiver_id: userId })
         if (response.success) {updateFriendRequestStatus(userId, 'pending')}}
 
+    const acceptRequest = (requestId) => {
+        console.log('Accepting request:', requestId)
+    }
+
+    const rejectRequest = (requestId) => {
+        console.log('Rejecting request:', requestId)
+    }
+
     useEffect(() => {
         scrollToBottom()}, [messages])
 
@@ -140,6 +148,10 @@ function Dashboard() {
                         {incomingRequests.map(req => (
                             <div key={req.id} className="channel-item">
                                 <span className="channel-name">{req.username}</span>
+                                <div className="request-buttons">
+                                    <button className="request-btn accept" onClick={() => acceptRequest(req.id)}>✓</button>
+                                    <button className="request-btn reject" onClick={() => rejectRequest(req.id)}>✗</button>
+                                </div>
                             </div>
                         ))}
                     </div>
