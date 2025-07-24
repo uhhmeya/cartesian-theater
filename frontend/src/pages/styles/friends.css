@@ -1,0 +1,69 @@
+.user-list-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.5rem;
+    background: #0a0a0a;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 2rem;
+}
+
+.user-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.user-avatar {
+    width: 80px;
+    height: 80px;
+    background: #3a3a3a;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: rgba(255, 255, 255, 0.8);
+    font-weight: 600;
+    font-size: 2rem;
+}
+
+.user-name {
+    font-size: 1.125rem;
+    color: #ffffff;
+    font-weight: 600;
+    text-align: center;
+}
+
+.user-item button {
+    background: #b91c1c;
+    color: #ffffff;
+    border: none;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.625rem;
+    font-weight: 500;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.1s ease;
+    margin-top: 0.25rem;
+}
+
+.user-item button:hover:not(:disabled) {
+    background: #991b1b;
+}
+
+.user-item button:disabled {
+    background: #633333;
+    color: rgba(255, 255, 255, 0.5);
+    opacity: 1;
+    cursor: not-allowed;
+}
+
+.pending-btn {
+    background: #565656 !important;
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+.rejected-btn {
+    background: #666;
+}

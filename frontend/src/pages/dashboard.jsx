@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { connectWebSocket } from '../services/websocket'
 import { handleLogout } from '../services/auth'
 import { apiRequest } from '../services/api'
-import './styles/dashboard.css'
+import './styles/sidebar.css'
+import './styles/messages.css'
+import './styles/friends.css'
 
 function Dashboard() {
     const navigate = useNavigate()
@@ -113,7 +115,7 @@ function Dashboard() {
                     </div>
 
                     <div className="channel-list">
-                        <div className="channel-item active" onClick={() => setShowUserList(false)}>
+                        <div className={`channel-item ${!showUserList ? 'active' : ''}`} onClick={() => setShowUserList(false)}>
 
                             <span className="channel-name">erik</span>
                         </div>
