@@ -226,14 +226,6 @@ function Dashboard() {
                                     }
                                 }}
                             />
-
-                            <button
-                                type="submit"
-                                className="send-button"
-                                disabled={connectionStatus !== 'connected' || !inputText.trim()}
-                            >
-                                Send
-                            </button>
                         </form>
                     </>
                 )}
