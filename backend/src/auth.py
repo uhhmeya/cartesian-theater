@@ -1,14 +1,14 @@
 from flask import Blueprint, request, jsonify, session
 from flask_socketio import emit, disconnect
 from datetime import datetime, timedelta
-from extensions import User, socketio, db, bcrypt
+from extensions import User, socketio, db, bcrypt, FriendRequest
 from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
-from src.utility import verify_access_token
+from src.utility import verify_access_token, login_required
 from threading import Timer
 
 auth = Blueprint('auth', __name__)
 
-#public
+#http public
 @auth.route('/signin', methods=['POST'])
 def signin():
     data = request.get_json()
@@ -29,7 +29,7 @@ def signin():
         "refresh_token": create_refresh_token(identity=str(user.id))
     }), 200
 
-#public
+#http public
 @auth.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
@@ -48,7 +48,7 @@ def signup():
 
     return jsonify({"success": True}), 201
 
-#public
+#http public
 @auth.route('/refresh', methods=['POST'])
 def refresh():
     refresh_token = request.get_json().get('refresh_token')
@@ -64,7 +64,7 @@ def refresh():
     except:
         return jsonify({"success": False, "message": "Invalid or expired refresh token"}), 401
 
-#protected
+#websocket protected : called when server auto accepts websocket connection
 @socketio.on('connect')
 def handle_connect():
     token = request.args.get('token')
@@ -92,10 +92,12 @@ def handle_connect():
 
     return True
 
+#websocket protected : called when frontend sends data through websocket with 'disconnect' title
 @socketio.on('disconnect')
 def handle_disconnect():
     pass
 
+#websocket protected : called when frontend sends data through websocket with 'message' title
 @socketio.on('message')
 def handle_message(data):
     text = data.get('text')
@@ -105,3 +107,61 @@ def handle_message(data):
         'text': 'Hi',
         'timestamp': datetime.utcnow().isoformat()
     })
+
+#http protected : gets all users except yourself and their friend request status
+@auth.route('/users', methods=['GET'])
+@login_required
+def get_all_users(user):
+
+    users = User.query.filter(User.id != user.id).all()
+
+    sent_requests = FriendRequest.query.filter_by(sender_id=user.id).all()
+    request_status = {req.receiver_id: req.status for req in sent_requests}
+
+    user_list = []
+    for u in users:
+        status = request_status.get(u.id, 'none')
+        if status == 'accepted': continue
+        user_list.append({'id': u.id,'username': u.username,'status': status})
+
+    return jsonify({'success': True, 'users': user_list}), 200
+
+
+@auth.route('/friend-request', methods=['POST'])
+@login_required
+def send_friend_request(user):
+
+    receiver_id = request.get_json().get('receiver_id')
+
+    if user.id == receiver_id:
+        return jsonify({'success': False, 'message': 'Cannot send request to yourself'}), 400
+
+    #checks if friend request already exists
+    existing = FriendRequest.query.filter_by(
+        sender_id=user.id,
+        receiver_id=receiver_id,
+        status='pending').first()
+
+    if existing:
+        return jsonify({'success': False, 'message': 'Request already sent'}), 400
+
+    friend_request = FriendRequest(sender_id=user.id, receiver_id=receiver_id)
+    db.session.add(friend_request)
+    db.session.commit()
+
+    return jsonify({'success': True}), 201
+
+
+@auth.route('/friend-requests/outgoing', methods=['GET'])
+@login_required
+def get_outgoing_requests(user):
+    requests = FriendRequest.query.filter_by(sender_id=user.id, status='pending').all()
+    return jsonify([{'id': r.id, 'username': r.receiver.username} for r in requests])
+
+@auth.route('/friend-requests/incoming', methods=['GET'])
+@login_required
+def get_incoming_requests(user):
+    requests = FriendRequest.query.filter_by(receiver_id=user.id, status='pending').all()
+    return jsonify([{'id': r.id, 'username': r.sender.username} for r in requests])
+
+

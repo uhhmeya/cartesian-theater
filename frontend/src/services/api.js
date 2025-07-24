@@ -19,14 +19,14 @@ const refreshToken = async () => {
     }
 }
 
-export const apiRequest = async (url, data) => {
+export const apiRequest = async (url, data, method = 'POST') => {
     const makeRequest = (token) => fetch(url, {
-        method: 'POST',
+        method,
         headers: {
             'Content-Type': 'application/json',
             ...(token && { 'Authorization': `Bearer ${token}` })
         },
-        body: JSON.stringify(data)
+        ...(method !== 'GET' && { body: JSON.stringify(data) })
     })
 
     try {

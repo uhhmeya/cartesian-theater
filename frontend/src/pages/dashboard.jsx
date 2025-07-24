@@ -2,63 +2,91 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { connectWebSocket } from '../services/websocket'
 import { handleLogout } from '../services/auth'
+import { apiRequest } from '../services/api'
 import './styles/dashboard.css'
 
 function Dashboard() {
-
     const navigate = useNavigate()
 
     //message = {user, text, time}
-    //messages = array of all messages
     const [messages, setMessages] = useState([])
-
-    //inputText = text currently being typed in input field
     const [inputText, setInputText] = useState('')
-
-    //username of the current user that is logged in
     const [myUsername] = useState(localStorage.getItem('username') || 'User')
-
     const [connectionStatus, setConnectionStatus] = useState('connecting')
     const socketRef = useRef(null)
     const messagesEndRef = useRef(null)
+    const [outgoingRequests, setOutgoingRequests] = useState([])
+    const [incomingRequests, setIncomingRequests] = useState([])
+
+    const [showUserList, setShowUserList] = useState(false)
+    const [allUsers, setAllUsers] = useState([])
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
+
+    const fetchUsers = async () => {
+        const response = await apiRequest('/api/users', null, 'GET')
+        if (response.success) setAllUsers(response.data.users)}
+
+    const fetchOutgoingRequests = async () => {
+        const response = await apiRequest('/api/friend-requests/outgoing', null, 'GET')
+        if (response.success) setOutgoingRequests(response.data)
     }
 
-    useEffect(() => {
-        scrollToBottom()
-    }, [messages])
+    const fetchIncomingRequests = async () => {
+        const response = await apiRequest('/api/friend-requests/incoming', null, 'GET')
+        if (response.success) setIncomingRequests(response.data)
+    }
+
+    const updateFriendRequestStatus = (userId, newStatus) => {
+        setAllUsers(prev => prev.map(u => u.id === userId ? {...u, status: newStatus} : u))}
+
+    const sendFriendRequest = async (userId) => {
+        const response = await apiRequest('/api/friend-request', { receiver_id: userId })
+        if (response.success) {updateFriendRequestStatus(userId, 'pending')}}
 
     useEffect(() => {
+        scrollToBottom()}, [messages])
 
+    useEffect(() => {
+        fetchOutgoingRequests()
+        fetchIncomingRequests()
+    }, [])
+
+    //calls fetchUsers() when showUserList is set to true
+    useEffect(() => {
+            if (showUserList) fetchUsers()},
+        [showUserList])
+
+    useEffect(() => {
         const access_token = localStorage.getItem('access_token')
 
-        //connectWebSocket(inline-function)
-        //connectWebSocket() sends websocket connection request to backend
-        //The inline code is called when backend sends response
+        //inline code called when websocket connects
         const socket = connectWebSocket(access_token, (status, socketInstance) => {
-
             setConnectionStatus(status)
+
             if (status === 'connected' && socketInstance) {
                 socketRef.current = socketInstance
 
-                //when backend sends message from websocket, the message is stored in messages
-                socketInstance.on('message', data => setMessages(prev => [...prev, data]))
-                //when websocket successfully connects, erik says hi
-                socketInstance.on('connection_response', data => console.log('Connected:', data))
+                //adds message that server sends to user from websocket to messages array
+                socketInstance.on('message', data => {
+                    setMessages(prev => [...prev, data])})
+
+                socketInstance.on('connection_response', data => {
+                    console.log('Connected:', data)})
             }
         })
-        //websocket is closed when dashboard dismounts
+
         return () => socket?.disconnect()
     }, [])
 
     const handleSendMessage = e => {
         e.preventDefault()
+
         if (inputText.trim() && socketRef.current) {
-            //adds outgoing messages to messages array
+            //adds message that server sends to user from websocket to messages array
             setMessages(prev => [...prev, { user: myUsername, text: inputText, timestamp: new Date().toISOString() }])
-            //sends messages to backend
+
             socketRef.current.emit('message', { text: inputText })
             setInputText('')
         }
@@ -67,67 +95,134 @@ function Dashboard() {
     return (
         <div className="chat-container">
 
-
+            {/* Sidebar */}
             <div className="chat-sidebar">
                 <div className="sidebar-header">
-                    <h2><div className="logo-circle"><span>CT</span></div>Cartesian Theater</h2>
+                    <h2>Cartesian Theater</h2>
+
                     <div className="user-menu">
-                        <div className="user-profile">{myUsername[0].toUpperCase()}<div className="user-status online"></div></div>
+                        <div className="user-profile">{myUsername[0].toUpperCase()}</div>
                         <span>{myUsername}</span>
                     </div>
                 </div>
 
                 <div className="channel-section">
-                    <div className="section-header"><span>Direct Messages</span></div>
+                    <div className="section-header">
+                        <span>Friends</span>
+                        <button className="add-friend-btn" onClick={() => setShowUserList(true)}>+</button>
+                    </div>
+
                     <div className="channel-list">
-                        <div className="channel-item active">
-                            <div className="dm-avatar">E<div className="user-status online"></div></div>
-                            <span className="channel-name">erik_ai</span>
+                        <div className="channel-item active" onClick={() => setShowUserList(false)}>
+
+                            <span className="channel-name">erik</span>
                         </div>
+                    </div>
+                </div>
+
+                <div className="channel-section">
+                    <div className="section-header"><span>Outgoing Requests</span></div>
+                    <div className="channel-list">
+                        {outgoingRequests.map(req => (
+                            <div key={req.id} className="channel-item">
+
+                                <span className="channel-name">{req.username}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="channel-section">
+                    <div className="section-header"><span>Incoming Requests</span></div>
+                    <div className="channel-list">
+                        {incomingRequests.map(req => (
+                            <div key={req.id} className="channel-item">
+                                <span className="channel-name">{req.username}</span>
+                            </div>
+                        ))}
                     </div>
                 </div>
 
                 <div className="sidebar-footer">
-                    <button className="logout-button" onClick={() => handleLogout(navigate)}><span>←</span> Logout</button>
+                    <button className="logout-button" onClick={() => handleLogout(navigate)}>
+                        <span>←</span> Logout
+                    </button>
                 </div>
             </div>
 
+            {/* Main Chat Area */}
             <div className="chat-main">
+
                 {connectionStatus !== 'connected' && (
-                    <div className={`connection-status-bar ${connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'}`}>
+                    <div className={`connection-status-bar ${
+                        connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
+                    }`}>
                         {connectionStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
                     </div>
                 )}
 
-                <div className="messages-container">
-                    {messages.map((msg, i) => (
-                        <div key={i} className={`chat-message ${msg.user === myUsername ? 'own-message' : ''}`}>
-                            {msg.user !== myUsername && <div className="message-avatar">{msg.user[0].toUpperCase()}</div>}
-                            <div className="message-wrapper">
-                                <div className="message-bubble"><div className="message-text">{msg.text}</div></div>
-                                {msg.user !== myUsername && <div className="message-sender">{msg.user}</div>}
+                {showUserList ? (
+                    <div className="user-list-container">
+                        {allUsers.map(user => (
+                            <div key={user.id} className="user-item">
+                                <div className="user-avatar">{user.username[0].toUpperCase()}</div>
+                                <span className="user-name">{user.username}</span>
+                                <button
+                                    onClick={() => sendFriendRequest(user.id)}
+                                    disabled={user.status !== 'none'}
+                                    className={user.status === 'rejected' ? 'rejected-btn' : ''}>
+                                    {user.status === 'pending' ? 'Pending' : user.status === 'rejected' ? 'Rejected' : 'Add Friend'}
+                                </button>
                             </div>
-                        </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                </div>
+                        ))}
+                    </div>
+                ) : (
+                    <>
+                        <div className="messages-container">
+                            {messages.map((msg, i) => (
+                                <div
+                                    key={i}
+                                    className={`chat-message ${msg.user === myUsername ? 'own-message' : ''}`}
+                                >
+                                    <div className="message-wrapper">
+                                        <div className="message-bubble">
+                                            <div className="message-text">{msg.text}</div>
+                                        </div>
 
-                <form className="message-input-container" onSubmit={handleSendMessage}>
-                    <div
-                        className="message-input"
-                        contentEditable
-                        placeholder="Message erik_ai"
-                        onInput={e => setInputText(e.target.textContent)}
-                        onKeyDown={e => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault()
-                                handleSendMessage(e)
-                                e.target.textContent = ''
-                            }
-                        }}
-                    />
-                    <button type="submit" className="send-button" disabled={connectionStatus !== 'connected' || !inputText.trim()}>Send</button>
-                </form>
+                                        {msg.user !== myUsername && (
+                                            <div className="message-sender">{msg.user}</div>
+                                        )}
+                                    </div>
+                                </div>
+                            ))}
+                            <div ref={messagesEndRef} />
+                        </div>
+
+                        <form className="message-input-container" onSubmit={handleSendMessage}>
+                            <div
+                                className="message-input"
+                                contentEditable
+                                placeholder="Message erik"
+                                onInput={e => setInputText(e.target.textContent)}
+                                onKeyDown={e => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault()
+                                        handleSendMessage(e)
+                                        e.target.textContent = ''
+                                    }
+                                }}
+                            />
+
+                            <button
+                                type="submit"
+                                className="send-button"
+                                disabled={connectionStatus !== 'connected' || !inputText.trim()}
+                            >
+                                Send
+                            </button>
+                        </form>
+                    </>
+                )}
             </div>
         </div>
     )
