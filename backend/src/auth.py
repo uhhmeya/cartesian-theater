@@ -64,7 +64,7 @@ def refresh():
     except:
         return jsonify({"success": False, "message": "Invalid or expired refresh token"}), 401
 
-#websocket protected : called when server auto accepts websocket connection
+#websocket protected
 @socketio.on('connect')
 def handle_connect():
     token = request.args.get('token')
@@ -92,37 +92,47 @@ def handle_connect():
 
     return True
 
-#websocket protected : called when frontend sends data through websocket with 'disconnect' title
+#websocket protected
 @socketio.on('disconnect')
 def handle_disconnect():
     pass
 
-#websocket protected : called when frontend sends data through websocket with 'message' title
+#websocket protected
 @socketio.on('message')
 def handle_message(data):
     text = data.get('text')
-
     emit('message', {
         'user': 'erik_ai',
         'text': 'Hi',
         'timestamp': datetime.utcnow().isoformat()
     })
 
-#http protected : gets all users except yourself and their friend request status
-@auth.route('/users', methods=['GET'])
-@login_required
-def get_all_users(user):
 
+@auth.route('/social-data', methods=['GET'])
+@login_required
+def get_social_data(user):
     users = User.query.filter(User.id != user.id).all()
 
     sent_requests = FriendRequest.query.filter_by(sender_id=user.id).all()
-    request_status = {req.receiver_id: req.status for req in sent_requests}
+    received_requests = FriendRequest.query.filter_by(receiver_id=user.id).all()
 
-    user_list = []
-    for u in users:
-        status = request_status.get(u.id, 'none')
-        if status == 'accepted': continue
-        user_list.append({'id': u.id,'username': u.username,'status': status})
+    request_map = {}
+    for req in sent_requests:
+        request_map[req.receiver_id] = {'status': req.status, 'id': req.id, 'type': 'sent'}
+    for req in received_requests:
+        if req.sender_id not in request_map:
+            request_map[req.sender_id] = {'status': req.status, 'id': req.id, 'type': 'received'}
+
+    return jsonify({
+        'success': True,
+        'users': [{
+            'id': u.id,
+            'username': u.username,
+            'status': request_map.get(u.id, {}).get('status', 'none'),
+            'requestId': request_map.get(u.id, {}).get('id'),
+            'requestType': request_map.get(u.id, {}).get('type', 'none')
+        } for u in users]
+    }), 200
 
     return jsonify({'success': True, 'users': user_list}), 200
 
@@ -152,16 +162,42 @@ def send_friend_request(user):
     return jsonify({'success': True}), 201
 
 
-@auth.route('/friend-requests/outgoing', methods=['GET'])
+@auth.route('/friend-request/<int:request_id>/accept', methods=['POST'])
 @login_required
-def get_outgoing_requests(user):
-    requests = FriendRequest.query.filter_by(sender_id=user.id, status='pending').all()
-    return jsonify([{'id': r.id, 'username': r.receiver.username} for r in requests])
+def accept_friend_request(user, request_id):
+    friend_request = FriendRequest.query.get(request_id)
 
-@auth.route('/friend-requests/incoming', methods=['GET'])
+    if not friend_request or friend_request.receiver_id != user.id:
+        return jsonify({'success': False}), 404
+
+    friend_request.status = 'accepted'
+    db.session.commit()
+
+    return jsonify({'success': True}), 200
+
+@auth.route('/friend-request/<int:request_id>/reject', methods=['POST'])
 @login_required
-def get_incoming_requests(user):
-    requests = FriendRequest.query.filter_by(receiver_id=user.id, status='pending').all()
-    return jsonify([{'id': r.id, 'username': r.sender.username} for r in requests])
+def reject_friend_request(user, request_id):
+    friend_request = FriendRequest.query.get(request_id)
+
+    if not friend_request or friend_request.receiver_id != user.id:
+        return jsonify({'success': False}), 404
+
+    friend_request.status = 'rejected'
+    db.session.commit()
+
+    return jsonify({'success': True}), 200
 
 
+@auth.route('/friend-request/<int:request_id>/cancel', methods=['DELETE'])
+@login_required
+def cancel_friend_request(user, request_id):
+    friend_request = FriendRequest.query.get(request_id)
+
+    if not friend_request or friend_request.sender_id != user.id:
+        return jsonify({'success': False}), 404
+
+    db.session.delete(friend_request)
+    db.session.commit()
+
+    return jsonify({'success': True}), 200

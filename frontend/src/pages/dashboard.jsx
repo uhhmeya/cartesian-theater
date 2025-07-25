@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { connectWebSocket } from '../services/websocket'
+import { useWebSocket } from '../hooks/useWebSocket'
 import { handleLogout } from '../services/auth'
-import { apiRequest } from '../services/api'
-import './styles/sidebar.css'
-import './styles/messages.css'
-import './styles/friends.css'
+import { useSocialData } from '../hooks/useSocialData'
+import { UserAvatar } from '../components/UserAvatar'
+import { ChannelItem } from '../components/ChannelItem.jsx'
+import '../styles/dashboard/sidebar.css'
+import '../styles/dashboard/messages.css'
+import '../styles/dashboard/friends.css'
 
 function Dashboard() {
     const navigate = useNavigate()
@@ -14,93 +16,35 @@ function Dashboard() {
     const [messages, setMessages] = useState([])
     const [inputText, setInputText] = useState('')
     const [myUsername] = useState(localStorage.getItem('username') || 'User')
-    const [connectionStatus, setConnectionStatus] = useState('connecting')
-    const socketRef = useRef(null)
     const messagesEndRef = useRef(null)
-    const [outgoingRequests, setOutgoingRequests] = useState([])
-    const [incomingRequests, setIncomingRequests] = useState([])
-
     const [showUserList, setShowUserList] = useState(false)
-    const [allUsers, setAllUsers] = useState([])
+
+    const { allUsers, friends, outgoingRequests, incomingRequests,
+        refresh, sendFriendRequest, acceptRequest, rejectRequest, cancelRequest } =
+        useSocialData()
+
+    const { connectionStatus,
+        sendMessage } =
+        useWebSocket(data => setMessages(prev => [...prev, data]))
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
 
-    const fetchUsers = async () => {
-        const response = await apiRequest('/api/users', null, 'GET')
-        if (response.success) setAllUsers(response.data.users)}
-
-    const fetchOutgoingRequests = async () => {
-        const response = await apiRequest('/api/friend-requests/outgoing', null, 'GET')
-        if (response.success) setOutgoingRequests(response.data)
-    }
-
-    const fetchIncomingRequests = async () => {
-        const response = await apiRequest('/api/friend-requests/incoming', null, 'GET')
-        if (response.success) setIncomingRequests(response.data)
-    }
-
-    const updateFriendRequestStatus = (userId, newStatus) => {
-        setAllUsers(prev => prev.map(u => u.id === userId ? {...u, status: newStatus} : u))}
-
-    const sendFriendRequest = async (userId) => {
-        const response = await apiRequest('/api/friend-request', { receiver_id: userId })
-        if (response.success) {updateFriendRequestStatus(userId, 'pending')}}
-
-    const acceptRequest = (requestId) => {
-        console.log('Accepting request:', requestId)
-    }
-
-    const rejectRequest = (requestId) => {
-        console.log('Rejecting request:', requestId)
-    }
-
+    //called when user gets dm in channel they are currently viewing
     useEffect(() => {
         scrollToBottom()}, [messages])
 
+    //called when user clicks +
     useEffect(() => {
-        fetchOutgoingRequests()
-        fetchIncomingRequests()
-    }, [])
-
-    //calls fetchUsers() when showUserList is set to true
-    useEffect(() => {
-            if (showUserList) fetchUsers()},
+            if (showUserList) refresh()},
         [showUserList])
-
-    useEffect(() => {
-        const access_token = localStorage.getItem('access_token')
-
-        //inline code called when websocket connects
-        const socket = connectWebSocket(access_token, (status, socketInstance) => {
-            setConnectionStatus(status)
-
-            if (status === 'connected' && socketInstance) {
-                socketRef.current = socketInstance
-
-                //adds message that server sends to user from websocket to messages array
-                socketInstance.on('message', data => {
-                    setMessages(prev => [...prev, data])})
-
-                socketInstance.on('connection_response', data => {
-                    console.log('Connected:', data)})
-            }
-        })
-
-        return () => socket?.disconnect()
-    }, [])
 
     const handleSendMessage = e => {
         e.preventDefault()
-
-        if (inputText.trim() && socketRef.current) {
-            //adds message that server sends to user from websocket to messages array
+        if (inputText.trim()) {
             setMessages(prev => [...prev, { user: myUsername, text: inputText, timestamp: new Date().toISOString() }])
-
-            socketRef.current.emit('message', { text: inputText })
-            setInputText('')
-        }
-    }
+            sendMessage(inputText)
+            setInputText('')}}
 
     return (
         <div className="chat-container">
@@ -111,7 +55,7 @@ function Dashboard() {
                     <h2>Cartesian Theater</h2>
 
                     <div className="user-menu">
-                        <div className="user-profile">{myUsername[0].toUpperCase()}</div>
+                        <UserAvatar username={myUsername} className="user-profile" />
                         <span>{myUsername}</span>
                     </div>
                 </div>
@@ -123,10 +67,11 @@ function Dashboard() {
                     </div>
 
                     <div className="channel-list">
-                        <div className={`channel-item ${!showUserList ? 'active' : ''}`} onClick={() => setShowUserList(false)}>
-
-                            <span className="channel-name">erik</span>
-                        </div>
+                        {friends.map(friend => (
+                            <ChannelItem key={friend.id} active={!showUserList} onClick={() => setShowUserList(false)}>
+                                <span className="channel-name">{friend.username}</span>
+                            </ChannelItem>
+                        ))}
                     </div>
                 </div>
 
@@ -134,10 +79,10 @@ function Dashboard() {
                     <div className="section-header"><span>Outgoing Requests</span></div>
                     <div className="channel-list">
                         {outgoingRequests.map(req => (
-                            <div key={req.id} className="channel-item">
-
+                            <ChannelItem key={req.id}>
                                 <span className="channel-name">{req.username}</span>
-                            </div>
+                                <button className="request-btn reject" onClick={() => cancelRequest(req.requestId)}>✗</button>
+                            </ChannelItem>
                         ))}
                     </div>
                 </div>
@@ -146,13 +91,13 @@ function Dashboard() {
                     <div className="section-header"><span>Incoming Requests</span></div>
                     <div className="channel-list">
                         {incomingRequests.map(req => (
-                            <div key={req.id} className="channel-item">
+                            <ChannelItem key={req.id}>
                                 <span className="channel-name">{req.username}</span>
                                 <div className="request-buttons">
-                                    <button className="request-btn accept" onClick={() => acceptRequest(req.id)}>✓</button>
-                                    <button className="request-btn reject" onClick={() => rejectRequest(req.id)}>✗</button>
+                                    <button className="request-btn accept" onClick={() => acceptRequest(req.requestId)}>✓</button>
+                                    <button className="request-btn reject" onClick={() => rejectRequest(req.requestId)}>✗</button>
                                 </div>
-                            </div>
+                            </ChannelItem>
                         ))}
                     </div>
                 </div>
@@ -179,7 +124,7 @@ function Dashboard() {
                     <div className="user-list-container">
                         {allUsers.map(user => (
                             <div key={user.id} className="user-item">
-                                <div className="user-avatar">{user.username[0].toUpperCase()}</div>
+                                <UserAvatar username={user.username} className="user-avatar" />
                                 <span className="user-name">{user.username}</span>
                                 <button
                                     onClick={() => sendFriendRequest(user.id)}
@@ -222,9 +167,7 @@ function Dashboard() {
                                     if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault()
                                         handleSendMessage(e)
-                                        e.target.textContent = ''
-                                    }
-                                }}
+                                        e.target.textContent = ''}}}
                             />
                         </form>
                     </>
