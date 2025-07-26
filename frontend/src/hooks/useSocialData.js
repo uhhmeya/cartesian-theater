@@ -13,9 +13,9 @@ export const useSocialData = () => {
         refresh()
     }, [])
 
-    const friends = allUsers.filter(u => u.status === 'accepted')
-    const outgoingRequests = allUsers.filter(u => u.status === 'pending' && u.requestType === 'sent')
-    const incomingRequests = allUsers.filter(u => u.status === 'pending' && u.requestType === 'received')
+    const friends = allUsers.filter(u => u.relationshipStatus === 'we_are_friends')
+    const outgoingRequests = allUsers.filter(u => u.relationshipStatus === 'i_sent_them_a_request')
+    const incomingRequests = allUsers.filter(u => u.relationshipStatus === 'they_sent_me_a_request')
 
     const sendFriendRequest = async (userId) => {
         const response = await apiRequest('/api/friend-request', { receiver_id: userId })
@@ -35,7 +35,7 @@ export const useSocialData = () => {
         return response
     }
 
-    const cancelRequest = async (requestId) => {
+    const withdrawRequest = async (requestId) => {
         const response = await apiRequest(`/api/friend-request/${requestId}/cancel`, null, 'DELETE')
         if (response.success) refresh()
         return response
@@ -50,6 +50,6 @@ export const useSocialData = () => {
         sendFriendRequest,
         acceptRequest,
         rejectRequest,
-        cancelRequest
+        withdrawRequest
     }
 }

@@ -123,18 +123,42 @@ def get_social_data(user):
         if req.sender_id not in request_map:
             request_map[req.sender_id] = {'status': req.status, 'id': req.id, 'type': 'received'}
 
+    def get_relationship_status(status, request_type):
+        if status == 'accepted':
+            return 'we_are_friends'
+        elif status == 'pending' and request_type == 'sent':
+            return 'i_sent_them_a_request'
+        elif status == 'pending' and request_type == 'received':
+            return 'they_sent_me_a_request'
+        elif status == 'rejected' and request_type == 'sent':
+            return 'they_rejected_me'
+        elif status == 'rejected' and request_type == 'received':
+            return 'i_rejected_them'
+        else:
+            return 'no_request_exists'
+
+    user_list = [{
+        'id': u.id,
+        'username': u.username,
+        'relationshipStatus': get_relationship_status(
+            request_map.get(u.id, {}).get('status', 'none'),
+            request_map.get(u.id, {}).get('type', 'none')
+        ),
+        'requestId': request_map.get(u.id, {}).get('id')
+    } for u in users]
+
+    # Add erik as a friend
+    user_list.append({
+        'id': 'erik',
+        'username': 'erik',
+        'relationshipStatus': 'we_are_friends',
+        'requestId': None
+    })
+
     return jsonify({
         'success': True,
-        'users': [{
-            'id': u.id,
-            'username': u.username,
-            'status': request_map.get(u.id, {}).get('status', 'none'),
-            'requestId': request_map.get(u.id, {}).get('id'),
-            'requestType': request_map.get(u.id, {}).get('type', 'none')
-        } for u in users]
+        'users': user_list
     }), 200
-
-    return jsonify({'success': True, 'users': user_list}), 200
 
 
 @auth.route('/friend-request', methods=['POST'])

@@ -4,7 +4,7 @@ import { useWebSocket } from '../hooks/useWebSocket'
 import { handleLogout } from '../services/auth'
 import { useSocialData } from '../hooks/useSocialData'
 import { UserAvatar } from '../components/UserAvatar'
-import { ChannelItem } from '../components/ChannelItem.jsx'
+import {SidebarItem} from '../components/SidebarItem.jsx'
 import '../styles/dashboard/sidebar.css'
 import '../styles/dashboard/messages.css'
 import '../styles/dashboard/friends.css'
@@ -12,19 +12,18 @@ import '../styles/dashboard/friends.css'
 function Dashboard() {
     const navigate = useNavigate()
 
-    //message = {user, text, time}
+    //message = {sender, text, time, recipient}
     const [messages, setMessages] = useState([])
     const [inputText, setInputText] = useState('')
     const [myUsername] = useState(localStorage.getItem('username') || 'User')
     const messagesEndRef = useRef(null)
-    const [showUserList, setShowUserList] = useState(false)
+    const [showNonfriendList, setShowNonfriendList] = useState(false)
+    const [activeFriend, setActiveFriend] = useState(null)
 
     const { allUsers, friends, outgoingRequests, incomingRequests,
-        refresh, sendFriendRequest, acceptRequest, rejectRequest, cancelRequest } =
-        useSocialData()
+        refresh, sendFriendRequest, acceptRequest, rejectRequest, withdrawRequest } = useSocialData()
 
-    const { connectionStatus,
-        sendMessage } =
+    const { connectionStatus, sendMessage } =
         useWebSocket(data => setMessages(prev => [...prev, data]))
 
     const scrollToBottom = () => {
@@ -36,8 +35,10 @@ function Dashboard() {
 
     //called when user clicks +
     useEffect(() => {
-            if (showUserList) refresh()},
-        [showUserList])
+            if (showNonfriendList) refresh()},
+        [showNonfriendList])
+
+
 
     const handleSendMessage = e => {
         e.preventDefault()
@@ -49,7 +50,7 @@ function Dashboard() {
     return (
         <div className="chat-container">
 
-            {/* Sidebar */}
+            {/* Logo and your Username */}
             <div className="chat-sidebar">
                 <div className="sidebar-header">
                     <h2>Cartesian Theater</h2>
@@ -60,48 +61,57 @@ function Dashboard() {
                     </div>
                 </div>
 
+                {/* Friends Section */}
                 <div className="channel-section">
                     <div className="section-header">
                         <span>Friends</span>
-                        <button className="add-friend-btn" onClick={() => setShowUserList(true)}>+</button>
+                        <button className="add-friend-btn" onClick={() => setShowNonfriendList(true)}>+</button>
                     </div>
-
                     <div className="channel-list">
+
+                        {/*loops through friends list */}
                         {friends.map(friend => (
-                            <ChannelItem key={friend.id} active={!showUserList} onClick={() => setShowUserList(false)}>
+                            <SidebarItem key={friend.id} active={!showNonfriendList} onClick={() => {
+                                //does nothing if nonfriendslist is not being shown
+                                setShowNonfriendList(false)
+                                setActiveFriend(friend)
+                            }}>
                                 <span className="channel-name">{friend.username}</span>
-                            </ChannelItem>
+                            </SidebarItem>
                         ))}
                     </div>
                 </div>
 
+                {/* Outgoing Requests Section */}
                 <div className="channel-section">
                     <div className="section-header"><span>Outgoing Requests</span></div>
                     <div className="channel-list">
                         {outgoingRequests.map(req => (
-                            <ChannelItem key={req.id}>
+                            <SidebarItem key={req.id}>
                                 <span className="channel-name">{req.username}</span>
-                                <button className="request-btn reject" onClick={() => cancelRequest(req.requestId)}>✗</button>
-                            </ChannelItem>
+                                <button className="request-btn reject" onClick={() => withdrawRequest(req.requestId)}>✗</button>
+                            </SidebarItem>
                         ))}
                     </div>
                 </div>
 
+                {/* Incoming Requests Section */}
                 <div className="channel-section">
                     <div className="section-header"><span>Incoming Requests</span></div>
                     <div className="channel-list">
                         {incomingRequests.map(req => (
-                            <ChannelItem key={req.id}>
+                            <SidebarItem key={req.id}>
                                 <span className="channel-name">{req.username}</span>
                                 <div className="request-buttons">
                                     <button className="request-btn accept" onClick={() => acceptRequest(req.requestId)}>✓</button>
                                     <button className="request-btn reject" onClick={() => rejectRequest(req.requestId)}>✗</button>
                                 </div>
-                            </ChannelItem>
+                            </SidebarItem>
                         ))}
                     </div>
                 </div>
 
+                {/* Logout */}
                 <div className="sidebar-footer">
                     <button className="logout-button" onClick={() => handleLogout(navigate)}>
                         <span>←</span> Logout
@@ -112,31 +122,51 @@ function Dashboard() {
             {/* Main Chat Area */}
             <div className="chat-main">
 
+                {/* Connection Bar */}
                 {connectionStatus !== 'connected' && (
                     <div className={`connection-status-bar ${
-                        connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'
-                    }`}>
+                        connectionStatus === 'connecting' ? 'bg-yellow-500' : 'bg-red-500'}`}>
                         {connectionStatus === 'connecting' ? 'Connecting...' : 'Disconnected'}
-                    </div>
-                )}
+                    </div>)}
 
-                {showUserList ? (
+                {/* Add Friends Area */}
+                {showNonfriendList ? (
                     <div className="user-list-container">
-                        {allUsers.map(user => (
-                            <div key={user.id} className="user-item">
-                                <UserAvatar username={user.username} className="user-avatar" />
-                                <span className="user-name">{user.username}</span>
-                                <button
-                                    onClick={() => sendFriendRequest(user.id)}
-                                    disabled={user.status !== 'none'}
-                                    className={user.status === 'rejected' ? 'rejected-btn' : ''}>
-                                    {user.status === 'pending' ? 'Pending' : user.status === 'rejected' ? 'Rejected' : 'Add Friend'}
-                                </button>
-                            </div>
+
+                        {/*loops through all users that you aren't friends with */}
+                        {allUsers.filter(nonfriend => nonfriend.relationshipStatus !== 'we_are_friends').map(nonfriend => (
+
+                            {/*profile + name + button visual */},
+                                <div key={nonfriend.id} className="user-item">
+                                    <UserAvatar username={nonfriend.username} className="user-avatar" />
+                                    <span className="user-name">{nonfriend.username}</span>
+
+                                    <button
+                                        onClick={() => {
+
+                                            //  button = "accept friend"
+                                            if (nonfriend.relationshipStatus === 'they_sent_me_a_request')
+                                                acceptRequest(nonfriend.requestId)
+
+                                            //  button = "add friend"
+                                            else
+                                                sendFriendRequest(nonfriend.id)
+                                        }}
+
+                                        // button = "pending"
+                                        disabled={nonfriend.relationshipStatus === 'i_sent_them_a_request'}
+
+                                        className={nonfriend.relationshipStatus === 'i_rejected_them' || nonfriend.relationshipStatus === 'they_rejected_me' ? 'rejected-btn' : ''}>
+                                        {nonfriend.relationshipStatus === 'they_sent_me_a_request' ? 'Accept Friend' :
+                                            nonfriend.relationshipStatus === 'i_sent_them_a_request' ? 'Pending' :
+                                                nonfriend.relationshipStatus === 'i_rejected_them' || nonfriend.relationshipStatus === 'they_rejected_me' ? 'Rejected' : 'Add Friend'}
+                                    </button>
+                                </div>
                         ))}
                     </div>
                 ) : (
                     <>
+                        {/* Displays all chat messages */}
                         <div className="messages-container">
                             {messages.map((msg, i) => (
                                 <div
@@ -157,6 +187,7 @@ function Dashboard() {
                             <div ref={messagesEndRef} />
                         </div>
 
+                        {/* Textbox */}
                         <form className="message-input-container" onSubmit={handleSendMessage}>
                             <div
                                 className="message-input"
