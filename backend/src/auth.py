@@ -12,7 +12,7 @@ auth = Blueprint('auth', __name__)
 @auth.route('/signin', methods=['POST'])
 def signin():
     data = request.get_json()
-    username = data.get('user', '').strip().lower()
+    username = data.get('user', '').strip()
     password = data.get('password', '')
 
     if not username or not password:
@@ -33,7 +33,7 @@ def signin():
 @auth.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
-    username = data.get('user', '').strip().lower()
+    username = data.get('user', '').strip()
     password = data.get('password', '')
 
     if not username or not password or len(username) < 4 or len(password) < 8:
@@ -64,7 +64,8 @@ def refresh():
     except:
         return jsonify({"success": False, "message": "Invalid or expired refresh token"}), 401
 
-#websocket protected
+active_connections = {}
+
 @socketio.on('connect')
 def handle_connect():
     token = request.args.get('token')
@@ -76,7 +77,7 @@ def handle_connect():
 
     session['user_id'] = user.id
     session['username'] = user.username
-    sid = request.sid
+    active_connections[user.id] = request.sid
 
     emit('connection_response', {
         'status': 'connected',
@@ -84,29 +85,43 @@ def handle_connect():
 
     def send_greeting():
         socketio.emit('message', {
-            'user': 'erik_ai',
+            'sender': 'erik',
+            'receiver': user.username,
             'text': 'Hi?',
-            'timestamp': datetime.utcnow().isoformat()}, to=sid)
+            'time': datetime.utcnow().isoformat()
+        }, to=request.sid)
 
     Timer(0.5, send_greeting).start()
-
     return True
 
-#websocket protected
 @socketio.on('disconnect')
 def handle_disconnect():
-    pass
+    user_id = session.get('user_id')
+    if user_id and user_id in active_connections:
+        del active_connections[user_id]
 
-#websocket protected
 @socketio.on('message')
 def handle_message(data):
     text = data.get('text')
-    emit('message', {
-        'user': 'erik_ai',
-        'text': 'Hi',
-        'timestamp': datetime.utcnow().isoformat()
-    })
+    recipient = data.get('recipient')
 
+    if recipient == 'erik':
+        emit('message', {
+            'sender': 'erik',
+            'receiver': session['username'],
+            'text': 'Hi',
+            'time': datetime.utcnow().isoformat()
+        })
+        return
+
+    recipient_user = User.query.filter_by(username=recipient).first()
+    if recipient_user and recipient_user.id in active_connections:
+        socketio.emit('message', {
+            'sender': session['username'],
+            'receiver': recipient,
+            'text': text,
+            'time': datetime.utcnow().isoformat()
+        }, room=active_connections[recipient_user.id])
 
 @auth.route('/social-data', methods=['GET'])
 @login_required

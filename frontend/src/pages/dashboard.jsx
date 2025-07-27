@@ -5,20 +5,25 @@ import { handleLogout } from '../services/auth'
 import { useSocialData } from '../hooks/useSocialData'
 import { UserAvatar } from '../components/UserAvatar'
 import {SidebarItem} from '../components/SidebarItem.jsx'
+import { Message } from '../components/Message.jsx'
+import { useConversation } from '../hooks/useConversation'
 import '../styles/dashboard/sidebar.css'
 import '../styles/dashboard/messages.css'
 import '../styles/dashboard/friends.css'
 
+// message = {sender, text, time, reciever}
+
 function Dashboard() {
     const navigate = useNavigate()
 
-    //message = {sender, text, time, recipient}
+    // messages is an array that stores message objects
     const [messages, setMessages] = useState([])
     const [inputText, setInputText] = useState('')
     const [myUsername] = useState(localStorage.getItem('username') || 'User')
     const messagesEndRef = useRef(null)
     const [showNonfriendList, setShowNonfriendList] = useState(false)
     const [activeFriend, setActiveFriend] = useState(null)
+    const conversation = useConversation(messages, myUsername, activeFriend)
 
     const { allUsers, friends, outgoingRequests, incomingRequests,
         refresh, sendFriendRequest, acceptRequest, rejectRequest, withdrawRequest } = useSocialData()
@@ -29,23 +34,48 @@ function Dashboard() {
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
 
-    //called when user gets dm in channel they are currently viewing
+    // called when user gets dm in channel they are currently viewing
     useEffect(() => {
         scrollToBottom()}, [messages])
 
-    //called when user clicks +
+    useEffect(() => {
+        console.log('MY USERNAME:', myUsername)
+        console.log('ALL MESSAGES:', messages)
+    }, [messages])
+
+    // called when user clicks +
     useEffect(() => {
             if (showNonfriendList) refresh()},
         [showNonfriendList])
 
+    // auto select erik on mount
+    useEffect(() => {
+        const erik = friends.find(f => f.username === 'erik')
+        if (erik && !activeFriend) setActiveFriend(erik)
+    }, [friends, activeFriend])
 
 
     const handleSendMessage = e => {
         e.preventDefault()
-        if (inputText.trim()) {
-            setMessages(prev => [...prev, { user: myUsername, text: inputText, timestamp: new Date().toISOString() }])
-            sendMessage(inputText)
+        if (inputText.trim() && activeFriend) {
+            setMessages(prev => [...prev, {
+                sender: myUsername,
+                text: inputText,
+                time: new Date().toISOString(),
+                receiver: activeFriend.username
+            }])
+            sendMessage(inputText, activeFriend.username)
             setInputText('')}}
+
+    const getNonfriendButton = (status) => {
+        const configs = {
+            'they_sent_me_a_request': { text: 'Accept Friend', className: '' },
+            'i_sent_them_a_request': { text: 'Pending', className: '' },
+            'i_rejected_them': { text: 'Rejected', className: 'rejected-btn' },
+            'they_rejected_me': { text: 'Rejected', className: 'rejected-btn' }
+        }
+        return configs[status] || { text: 'Add Friend', className: '' }
+    }
 
     return (
         <div className="chat-container">
@@ -71,9 +101,9 @@ function Dashboard() {
 
                         {/*loops through friends list */}
                         {friends.map(friend => (
-                            <SidebarItem key={friend.id} active={!showNonfriendList} onClick={() => {
-                                //does nothing if nonfriendslist is not being shown
-                                setShowNonfriendList(false)
+                            <SidebarItem key={friend.id} active={friend.id === activeFriend?.id} onClick={() => {
+                                //each user on sidebar is a button
+                                setShowNonfriendList(false) //does nothing if nonfriendslist is not being shown
                                 setActiveFriend(friend)
                             }}>
                                 <span className="channel-name">{friend.username}</span>
@@ -133,56 +163,33 @@ function Dashboard() {
                 {showNonfriendList ? (
                     <div className="user-list-container">
 
-                        {/*loops through all users that you aren't friends with */}
+                        {/*loops through all nonfriends */}
                         {allUsers.filter(nonfriend => nonfriend.relationshipStatus !== 'we_are_friends').map(nonfriend => (
+                            <div key={nonfriend.id} className="user-item">
+                                <UserAvatar username={nonfriend.username} className="user-avatar" />
+                                <span className="user-name">{nonfriend.username}</span>
+                                <button
+                                    onClick={() => {
+                                        if (nonfriend.relationshipStatus === 'they_sent_me_a_request') // accept friend
+                                            acceptRequest(nonfriend.requestId)
+                                        else // add friend
+                                            sendFriendRequest(nonfriend.id) }}
 
-                            {/*profile + name + button visual */},
-                                <div key={nonfriend.id} className="user-item">
-                                    <UserAvatar username={nonfriend.username} className="user-avatar" />
-                                    <span className="user-name">{nonfriend.username}</span>
+                                    disabled={nonfriend.relationshipStatus === 'i_sent_them_a_request'} // pending
 
-                                    <button
-                                        onClick={() => {
-
-                                            //  button = "accept friend"
-                                            if (nonfriend.relationshipStatus === 'they_sent_me_a_request')
-                                                acceptRequest(nonfriend.requestId)
-
-                                            //  button = "add friend"
-                                            else
-                                                sendFriendRequest(nonfriend.id)
-                                        }}
-
-                                        // button = "pending"
-                                        disabled={nonfriend.relationshipStatus === 'i_sent_them_a_request'}
-
-                                        className={nonfriend.relationshipStatus === 'i_rejected_them' || nonfriend.relationshipStatus === 'they_rejected_me' ? 'rejected-btn' : ''}>
-                                        {nonfriend.relationshipStatus === 'they_sent_me_a_request' ? 'Accept Friend' :
-                                            nonfriend.relationshipStatus === 'i_sent_them_a_request' ? 'Pending' :
-                                                nonfriend.relationshipStatus === 'i_rejected_them' || nonfriend.relationshipStatus === 'they_rejected_me' ? 'Rejected' : 'Add Friend'}
-                                    </button>
-                                </div>
+                                    // displays nonfriend button
+                                    className={getNonfriendButton(nonfriend.relationshipStatus).className}>
+                                    {getNonfriendButton(nonfriend.relationshipStatus).text}
+                                </button>
+                            </div>
                         ))}
                     </div>
                 ) : (
                     <>
-                        {/* Displays all chat messages */}
+                        {/* Displays conservations */}
                         <div className="messages-container">
-                            {messages.map((msg, i) => (
-                                <div
-                                    key={i}
-                                    className={`chat-message ${msg.user === myUsername ? 'own-message' : ''}`}
-                                >
-                                    <div className="message-wrapper">
-                                        <div className="message-bubble">
-                                            <div className="message-text">{msg.text}</div>
-                                        </div>
-
-                                        {msg.user !== myUsername && (
-                                            <div className="message-sender">{msg.user}</div>
-                                        )}
-                                    </div>
-                                </div>
+                            {conversation.map((msg, i) => (
+                                <Message key={i} message={msg} myUsername={myUsername} />
                             ))}
                             <div ref={messagesEndRef} />
                         </div>
@@ -191,8 +198,8 @@ function Dashboard() {
                         <form className="message-input-container" onSubmit={handleSendMessage}>
                             <div
                                 className="message-input"
-                                contentEditable
-                                placeholder="Message erik"
+                                contentEditable={!!activeFriend}
+                                placeholder={activeFriend ? `Message ${activeFriend.username}` : ""}
                                 onInput={e => setInputText(e.target.textContent)}
                                 onKeyDown={e => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
