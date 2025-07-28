@@ -18,8 +18,16 @@ export const useWebSocket = (onMessage) => {
             setConnectionStatus(status)
             if (status === 'connected' && socketInstance) {
                 socketRef.current = socketInstance
+
                 socketInstance.on('message', data => onMessageRef.current(data))
-                socketInstance.on('connection_response', () => {})
+
+                socketInstance.on('error', data => {
+                    console.error('Backend error:', data)
+                })
+
+                socketInstance.on('connect_error', error => {
+                    console.error('Connection failed:', error)
+                })
             }
         })
 

@@ -1,10 +1,9 @@
 from flask import Flask
 from flask_cors import CORS
 from datetime import timedelta
-from src.auth import auth
 from extensions import db, bcrypt, jwt, socketio
-
-
+from src.routes import auth, social
+import src.websocket
 
 app = Flask(__name__)
 
@@ -22,6 +21,7 @@ db.init_app(app)
 bcrypt.init_app(app)
 jwt.init_app(app)
 app.register_blueprint(auth)
+app.register_blueprint(social)
 
 @app.route('/')
 def root():

@@ -36,12 +36,13 @@ function Dashboard() {
 
     // called when user gets dm in channel they are currently viewing
     useEffect(() => {
-        scrollToBottom()}, [messages])
+        const lastMessage = messages[messages.length - 1]
+        if (!lastMessage || !activeFriend) return
 
-    useEffect(() => {
-        console.log('MY USERNAME:', myUsername)
-        console.log('ALL MESSAGES:', messages)
-    }, [messages])
+        if ((lastMessage.sender === myUsername && lastMessage.receiver === activeFriend.username) ||
+            (lastMessage.sender === activeFriend.username && lastMessage.receiver === myUsername))
+            scrollToBottom()
+    }, [messages, activeFriend, myUsername])
 
     // called when user clicks +
     useEffect(() => {
@@ -62,8 +63,7 @@ function Dashboard() {
                 sender: myUsername,
                 text: inputText,
                 time: new Date().toISOString(),
-                receiver: activeFriend.username
-            }])
+                receiver: activeFriend.username}])
             sendMessage(inputText, activeFriend.username)
             setInputText('')}}
 

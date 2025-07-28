@@ -3,8 +3,7 @@ from threading import Timer
 from flask_jwt_extended import verify_jwt_in_request, get_jwt_identity, decode_token
 from functools import wraps
 from flask import jsonify
-from extensions import User, socketio
-
+from src.models import User
 
 def verify_access_token(token):
     try:
@@ -28,5 +27,3 @@ def login_required(f):
         except:
             return jsonify({"success": False, "message": "Invalid token"}), 401
     return decorated_function
-
-
