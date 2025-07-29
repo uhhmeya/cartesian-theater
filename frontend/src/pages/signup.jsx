@@ -15,7 +15,7 @@ function Signup() {
     const handleSignUp = async ({ user, password }) => {
         setMessage('')
         setIsLoading(true)
-        const response = await apiRequest('/api/signup', { user, password })
+        const response = await apiRequest('/signup', { user, password })
         if (!response.success) {
             setMessage(response.data?.message || 'An error occurred')
             setIsLoading(false)

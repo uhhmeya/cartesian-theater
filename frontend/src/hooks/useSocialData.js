@@ -5,7 +5,7 @@ export const useSocialData = () => {
     const [allUsers, setAllUsers] = useState([])
 
     const refresh = async () => {
-        const response = await apiRequest('/api/social-data', null, 'GET')
+        const response = await apiRequest('/social-data', null, 'GET')
         if (response.success) setAllUsers(response.data.users)
     }
 
@@ -18,25 +18,25 @@ export const useSocialData = () => {
     const incomingRequests = allUsers.filter(u => u.relationshipStatus === 'they_sent_me_a_request')
 
     const sendFriendRequest = async (userId) => {
-        const response = await apiRequest('/api/friend-request', { receiver_id: userId })
+        const response = await apiRequest('/friend-request', { receiver_id: userId })
         if (response.success) refresh()
         return response
     }
 
     const acceptRequest = async (requestId) => {
-        const response = await apiRequest(`/api/friend-request/${requestId}/accept`, null, 'POST')
+        const response = await apiRequest(`/friend-request/${requestId}/accept`, null, 'POST')
         if (response.success) refresh()
         return response
     }
 
     const rejectRequest = async (requestId) => {
-        const response = await apiRequest(`/api/friend-request/${requestId}/reject`, null, 'POST')
+        const response = await apiRequest(`/friend-request/${requestId}/reject`, null, 'POST')
         if (response.success) refresh()
         return response
     }
 
     const withdrawRequest = async (requestId) => {
-        const response = await apiRequest(`/api/friend-request/${requestId}/cancel`, null, 'DELETE')
+        const response = await apiRequest(`/friend-request/${requestId}/cancel`, null, 'DELETE')
         if (response.success) refresh()
         return response
     }

@@ -1,8 +1,9 @@
 from flask import request, session
 from flask_socketio import emit, disconnect
 from datetime import datetime
-from extensions import socketio
+from extensions import socketio, db
 from src.models import User
+from src.models.message import Message
 from src.utils.auth import verify_access_token
 from threading import Timer
 
@@ -72,13 +73,19 @@ def handle_message(data):
         emit('error', {'message': 'User not found'})
         return
 
-    if recipient_user.id not in active_connections:
-        emit('error', {'message': 'User offline'})
-        return
+    # Save to database
+    message = Message(
+        sender_id=session['user_id'],
+        receiver_id=recipient_user.id,
+        text=text)
+    db.session.add(message)
+    db.session.commit()
 
-    socketio.emit('message', {
-        'sender': session['username'],
-        'receiver': recipient,
-        'text': text,
-        'time': datetime.utcnow().isoformat()
-    }, room=active_connections[recipient_user.id])
+    # Send if online
+    if recipient_user.id in active_connections:
+        socketio.emit('message', {
+            'sender': session['username'],
+            'receiver': recipient,
+            'text': text,
+            'time': message.created_at.isoformat()
+        }, room=active_connections[recipient_user.id])

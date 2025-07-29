@@ -1,6 +1,7 @@
 from flask import Blueprint, request, jsonify
 from extensions import db
 from src.models import User, FriendRequest
+from src.models.message import Message
 from src.utils.auth import login_required
 
 social = Blueprint('social', __name__)
@@ -119,3 +120,31 @@ def cancel_friend_request(user, request_id):
     db.session.commit()
 
     return jsonify({'success': True}), 200
+
+#gets user's older messages
+@social.route('/conversation/<username>', methods=['GET'])
+@login_required
+def get_conversation(user, username):
+    print(f"=== GET CONVERSATION DEBUG ===")
+    print(f"Headers: {dict(request.headers)}")
+    print(f"Auth header: {request.headers.get('Authorization')}")
+    print(f"User param: {user}")
+    print(f"Username param: {username}")
+    other_user = User.query.filter_by(username=username).first()
+    if not other_user:
+        return jsonify({'success': False}), 404
+
+    messages = Message.query.filter(
+        ((Message.sender_id == user.id) & (Message.receiver_id == other_user.id)) |
+        ((Message.sender_id == other_user.id) & (Message.receiver_id == user.id))
+    ).order_by(Message.created_at).all()
+
+    return jsonify({
+        'success': True,
+        'messages': [{
+            'sender': msg.sender.username,
+            'receiver': msg.receiver.username,
+            'text': msg.text,
+            'time': msg.created_at.isoformat()
+        } for msg in messages]
+    })

@@ -14,7 +14,7 @@ function Login() {
         setMessage('')
         setIsLoading(true)
 
-        const response = await apiRequest('/api/signin', { user, password })
+        const response = await apiRequest('/signin', { user, password })
 
         if (!response.success) {
             setMessage(response.data?.message || 'An error occurred')

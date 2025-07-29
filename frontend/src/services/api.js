@@ -1,9 +1,11 @@
+const API_BASE = 'http://localhost:5001'
+
 const refreshToken = async () => {
     const refresh_token = localStorage.getItem('refresh_token')
     if (!refresh_token) return false
 
     try {
-        const response = await fetch('/api/refresh', {
+        const response = await fetch(`${API_BASE}/refresh`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refresh_token })
@@ -20,7 +22,7 @@ const refreshToken = async () => {
 }
 
 export const apiRequest = async (url, data, method = 'POST') => {
-    const makeRequest = (token) => fetch(url, {
+    const makeRequest = (token) => fetch(`${API_BASE}${url}`, {
         method,
         headers: {
             'Content-Type': 'application/json',

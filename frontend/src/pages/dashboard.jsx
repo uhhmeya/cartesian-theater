@@ -7,9 +7,11 @@ import { UserAvatar } from '../components/UserAvatar'
 import {SidebarItem} from '../components/SidebarItem.jsx'
 import { Message } from '../components/Message.jsx'
 import { useConversation } from '../hooks/useConversation'
+import { loadConversationHistory, shouldScrollToBottom } from '../services/messages'
 import '../styles/dashboard/sidebar.css'
 import '../styles/dashboard/messages.css'
 import '../styles/dashboard/friends.css'
+
 
 // message = {sender, text, time, reciever}
 
@@ -24,6 +26,7 @@ function Dashboard() {
     const [showNonfriendList, setShowNonfriendList] = useState(false)
     const [activeFriend, setActiveFriend] = useState(null)
     const conversation = useConversation(messages, myUsername, activeFriend)
+    const [loadedChats, setLoadedChats] = useState(new Set())
 
     const { allUsers, friends, outgoingRequests, incomingRequests,
         refresh, sendFriendRequest, acceptRequest, rejectRequest, withdrawRequest } = useSocialData()
@@ -31,29 +34,33 @@ function Dashboard() {
     const { connectionStatus, sendMessage } =
         useWebSocket(data => setMessages(prev => [...prev, data]))
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
-
-    // called when user gets dm in channel they are currently viewing
+    // if new message belongs to current conversation, then auto scroll
     useEffect(() => {
         const lastMessage = messages[messages.length - 1]
-        if (!lastMessage || !activeFriend) return
-
-        if ((lastMessage.sender === myUsername && lastMessage.receiver === activeFriend.username) ||
-            (lastMessage.sender === activeFriend.username && lastMessage.receiver === myUsername))
-            scrollToBottom()
+        if (shouldScrollToBottom(lastMessage, myUsername, activeFriend))
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages, activeFriend, myUsername])
 
-    // called when user clicks +
+    // social data is refreshed when + is clicked and auto selects erik on load
     useEffect(() => {
-            if (showNonfriendList) refresh()},
-        [showNonfriendList])
+        if (showNonfriendList) refresh()
+        else if (!activeFriend && friends.length) {
+            const erik = friends.find(f => f.username === 'erik')
+            if (erik) setActiveFriend(erik)
+        }
+    }, [showNonfriendList, friends, activeFriend])
 
-    // auto select erik on mount
+    // loads conversation history when new active friend is picked
     useEffect(() => {
-        const erik = friends.find(f => f.username === 'erik')
-        if (erik && !activeFriend) setActiveFriend(erik)
-    }, [friends, activeFriend])
+        if (!activeFriend || loadedChats.has(activeFriend.username)) return
+
+        loadConversationHistory(activeFriend.username).then(history => {
+            if (history.length) {
+                setMessages(prev => [...history, ...prev])
+                setLoadedChats(prev => new Set(prev).add(activeFriend.username))
+            }
+        })
+    }, [activeFriend])
 
 
     const handleSendMessage = e => {
@@ -72,8 +79,7 @@ function Dashboard() {
             'they_sent_me_a_request': { text: 'Accept Friend', className: '' },
             'i_sent_them_a_request': { text: 'Pending', className: '' },
             'i_rejected_them': { text: 'Rejected', className: 'rejected-btn' },
-            'they_rejected_me': { text: 'Rejected', className: 'rejected-btn' }
-        }
+            'they_rejected_me': { text: 'Rejected', className: 'rejected-btn' }}
         return configs[status] || { text: 'Add Friend', className: '' }
     }
 
@@ -101,9 +107,9 @@ function Dashboard() {
 
                         {/*loops through friends list */}
                         {friends.map(friend => (
-                            <SidebarItem key={friend.id} active={friend.id === activeFriend?.id} onClick={() => {
-                                //each user on sidebar is a button
-                                setShowNonfriendList(false) //does nothing if nonfriendslist is not being shown
+                            // shows red highlight if friend's convo is being viewed
+                            <SidebarItem key={friend.id} active={friend.id === activeFriend?.id && !showNonfriendList} onClick={() => {
+                                setShowNonfriendList(false)
                                 setActiveFriend(friend)
                             }}>
                                 <span className="channel-name">{friend.username}</span>
