@@ -18,11 +18,8 @@ def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         try:
-            print(f"=== LOGIN REQUIRED DEBUG ===")
-            print(f"Request headers: {request.headers}")
             verify_jwt_in_request()
             user_id = get_jwt_identity()
-            print(f"User ID from token: {user_id}")
             user = User.query.get(user_id)
             if not user:
                 return jsonify({"success": False, "message": "User not found"}), 401

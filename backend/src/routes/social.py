@@ -9,6 +9,7 @@ social = Blueprint('social', __name__)
 @social.route('/social-data', methods=['GET'])
 @login_required
 def get_social_data(user):
+    print(f"[SOCIAL-DATA] {user.username} fetching social data")
     users = User.query.filter(User.id != user.id).all()
 
     sent_requests = FriendRequest.query.filter_by(sender_id=user.id).all()
@@ -65,6 +66,7 @@ def send_friend_request(user):
     receiver_id = request.get_json().get('receiver_id')
 
     if user.id == receiver_id:
+        print(f"[FRIEND-REQUEST FAILED] {user.username} tried to friend themselves")
         return jsonify({'success': False, 'message': 'Cannot send request to yourself'}), 400
 
     #checks if friend request already exists
@@ -74,11 +76,13 @@ def send_friend_request(user):
         status='pending').first()
 
     if existing:
+        print(f"[FRIEND-REQUEST FAILED] {user.username} already sent request to user {receiver_id}")
         return jsonify({'success': False, 'message': 'Request already sent'}), 400
 
     friend_request = FriendRequest(sender_id=user.id, receiver_id=receiver_id)
     db.session.add(friend_request)
     db.session.commit()
+    print(f"[FRIEND-REQUEST SUCCESS] {user.username} → user {receiver_id}")
 
     return jsonify({'success': True}), 201
 
@@ -88,10 +92,12 @@ def accept_friend_request(user, request_id):
     friend_request = FriendRequest.query.get(request_id)
 
     if not friend_request or friend_request.receiver_id != user.id:
+        print(f"[ACCEPT FAILED] Invalid request {request_id} for {user.username}")
         return jsonify({'success': False}), 404
 
     friend_request.status = 'accepted'
     db.session.commit()
+    print(f"[ACCEPT SUCCESS] {user.username} accepted request from user {friend_request.sender_id}")
 
     return jsonify({'success': True}), 200
 
@@ -101,10 +107,12 @@ def reject_friend_request(user, request_id):
     friend_request = FriendRequest.query.get(request_id)
 
     if not friend_request or friend_request.receiver_id != user.id:
+        print(f"[REJECT FAILED] Invalid request {request_id} for {user.username}")
         return jsonify({'success': False}), 404
 
     friend_request.status = 'rejected'
     db.session.commit()
+    print(f"[REJECT SUCCESS] {user.username} rejected request from user {friend_request.sender_id}")
 
     return jsonify({'success': True}), 200
 
@@ -114,10 +122,12 @@ def cancel_friend_request(user, request_id):
     friend_request = FriendRequest.query.get(request_id)
 
     if not friend_request or friend_request.sender_id != user.id:
+        print(f"[CANCEL FAILED] Invalid request {request_id} for {user.username}")
         return jsonify({'success': False}), 404
 
     db.session.delete(friend_request)
     db.session.commit()
+    print(f"[CANCEL SUCCESS] {user.username} cancelled request to user {friend_request.receiver_id}")
 
     return jsonify({'success': True}), 200
 
@@ -125,13 +135,14 @@ def cancel_friend_request(user, request_id):
 @social.route('/conversation/<username>', methods=['GET'])
 @login_required
 def get_conversation(user, username):
-    print(f"=== GET CONVERSATION DEBUG ===")
-    print(f"Headers: {dict(request.headers)}")
-    print(f"Auth header: {request.headers.get('Authorization')}")
-    print(f"User param: {user}")
-    print(f"Username param: {username}")
+    print(f"[CONVERSATION] {user.username} loading chat with {username}")
+    if username == 'erik':
+        print(f"[CONVERSATION] Erik chat - returning empty")
+        return jsonify({'success': True, 'messages': []})
+
     other_user = User.query.filter_by(username=username).first()
     if not other_user:
+        print(f"[CONVERSATION FAILED] User {username} not found")
         return jsonify({'success': False}), 404
 
     messages = Message.query.filter(
@@ -139,9 +150,11 @@ def get_conversation(user, username):
         ((Message.sender_id == other_user.id) & (Message.receiver_id == user.id))
     ).order_by(Message.created_at).all()
 
+    print(f"[CONVERSATION SUCCESS] Loaded {len(messages)} messages")
     return jsonify({
         'success': True,
         'messages': [{
+            'id': str(msg.id),
             'sender': msg.sender.username,
             'receiver': msg.receiver.username,
             'text': msg.text,

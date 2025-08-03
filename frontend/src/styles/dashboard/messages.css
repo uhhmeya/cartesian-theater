@@ -194,3 +194,10 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
 }
+
+.message-status {
+    font-size: 0.625rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 0.125rem;
+    text-align: right;
+}

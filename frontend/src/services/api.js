@@ -22,14 +22,20 @@ const refreshToken = async () => {
 }
 
 export const apiRequest = async (url, data, method = 'POST') => {
-    const makeRequest = (token) => fetch(`${API_BASE}${url}`, {
-        method,
-        headers: {
+    const makeRequest = (token) => {
+        const headers = {
             'Content-Type': 'application/json',
             ...(token && { 'Authorization': `Bearer ${token}` })
-        },
-        ...(method !== 'GET' && { body: JSON.stringify(data) })
-    })
+        }
+        console.log('Request to:', `${API_BASE}${url}`)
+        console.log('Request headers:', JSON.stringify(headers, null, 2))
+        console.log('Token value:', token)
+        return fetch(`${API_BASE}${url}`, {
+            method,
+            headers,
+            ...(method !== 'GET' && { body: JSON.stringify(data) })
+        })
+    }
 
     try {
         let token = localStorage.getItem('access_token')

@@ -4,6 +4,9 @@ from datetime import timedelta
 from extensions import db, bcrypt, jwt, socketio
 from src.routes import auth, social
 import src.websocket
+import logging
+
+logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
 app = Flask(__name__)
 

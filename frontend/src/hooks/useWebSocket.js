@@ -1,14 +1,16 @@
 import { useState, useEffect, useRef } from 'react'
-import { connectWebSocket } from '../services/websocket'
+import { connectWebSocket} from "../services/websocket.js";
 
-export const useWebSocket = (onMessage) => {
+export const useWebSocket = (handleIncomingMessage, handleStatusUpdate) => {
     const [connectionStatus, setConnectionStatus] = useState('connecting')
     const socketRef = useRef(null)
-    const onMessageRef = useRef(onMessage)
+    const messageHandlerRef = useRef(handleIncomingMessage)
+    const statusHandlerRef = useRef(handleStatusUpdate)
 
     useEffect(() => {
-        onMessageRef.current = onMessage
-    }, [onMessage])
+        messageHandlerRef.current = handleIncomingMessage
+        statusHandlerRef.current = handleStatusUpdate
+    }, [handleIncomingMessage, handleStatusUpdate])
 
     useEffect(() => {
         const access_token = localStorage.getItem('access_token')
@@ -19,7 +21,8 @@ export const useWebSocket = (onMessage) => {
             if (status === 'connected' && socketInstance) {
                 socketRef.current = socketInstance
 
-                socketInstance.on('message', data => onMessageRef.current(data))
+                socketInstance.on('message', data => messageHandlerRef.current(data))
+                socketInstance.on('status_update', data => statusHandlerRef.current?.(data))
 
                 socketInstance.on('error', data => {
                     console.error('Backend error:', data)
@@ -39,9 +42,9 @@ export const useWebSocket = (onMessage) => {
         }
     }, [])
 
-    const sendMessage = (text, recipient) => {
-        if (socketRef.current) socketRef.current.emit('message', { text, recipient })
+    const sendMessage = (text, recipient, id) => {
+        if (socketRef.current) socketRef.current.emit('message', { text, recipient, id })
     }
 
-    return { connectionStatus, sendMessage }
+    return { connectionStatus, sendMessage, socket: socketRef.current }
 }

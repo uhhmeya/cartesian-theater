@@ -31,8 +31,17 @@ function Dashboard() {
     const { allUsers, friends, outgoingRequests, incomingRequests,
         refresh, sendFriendRequest, acceptRequest, rejectRequest, withdrawRequest } = useSocialData()
 
-    const { connectionStatus, sendMessage } =
-        useWebSocket(data => setMessages(prev => [...prev, data]))
+    const handleIncomingMessage = (data) => {
+        setMessages(prev => [...prev, data])
+    }
+
+    const handleStatusUpdate = (data) => {
+        setMessages(prev => prev.map(msg =>
+            msg.id === data.messageId ? {...msg, status: data.status} : msg
+        ))
+    }
+
+    const { connectionStatus, sendMessage, socket } = useWebSocket(handleIncomingMessage, handleStatusUpdate)
 
     // if new message belongs to current conversation, then auto scroll
     useEffect(() => {
@@ -41,38 +50,44 @@ function Dashboard() {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages, activeFriend, myUsername])
 
-    // social data is refreshed when + is clicked and auto selects erik on load
+    // user clicks + --> fire --> social data refreshed
     useEffect(() => {
-        if (showNonfriendList) refresh()
-        else if (!activeFriend && friends.length) {
-            const erik = friends.find(f => f.username === 'erik')
-            if (erik) setActiveFriend(erik)
-        }
-    }, [showNonfriendList, friends, activeFriend])
+        if (showNonfriendList) refresh()}, [showNonfriendList])
 
-    // loads conversation history when new active friend is picked
+    // population useEffect : friends array populated --> erik set as active friend
+    useEffect(() => {
+        if (!activeFriend && friends.length) {
+            const erik = friends.find(f => f.username === 'erik')
+            if (erik) setActiveFriend(erik)}}, [friends.length])
+
+    // ACTIVE FRIEND USE EFFECT : runs after population useEffect
     useEffect(() => {
         if (!activeFriend || loadedChats.has(activeFriend.username)) return
-
         loadConversationHistory(activeFriend.username).then(history => {
             if (history.length) {
                 setMessages(prev => [...history, ...prev])
                 setLoadedChats(prev => new Set(prev).add(activeFriend.username))
             }
+            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 100)
         })
     }, [activeFriend])
-
 
     const handleSendMessage = e => {
         e.preventDefault()
         if (inputText.trim() && activeFriend) {
+            const messageId = `${Date.now()}-${Math.random()}`
             setMessages(prev => [...prev, {
+                id: messageId,
                 sender: myUsername,
                 text: inputText,
                 time: new Date().toISOString(),
-                receiver: activeFriend.username}])
-            sendMessage(inputText, activeFriend.username)
-            setInputText('')}}
+                receiver: activeFriend.username,
+                status: 'sending'
+            }])
+            sendMessage(inputText, activeFriend.username, messageId)
+            setInputText('')
+        }
+    }
 
     const getNonfriendButton = (status) => {
         const configs = {
@@ -195,7 +210,12 @@ function Dashboard() {
                         {/* Displays conservations */}
                         <div className="messages-container">
                             {conversation.map((msg, i) => (
-                                <Message key={i} message={msg} myUsername={myUsername} />
+                                <Message
+                                    key={i}
+                                    message={msg}
+                                    myUsername={myUsername}
+                                    isLatest={i === conversation.length - 1 && msg.sender === myUsername}
+                                />
                             ))}
                             <div ref={messagesEndRef} />
                         </div>
