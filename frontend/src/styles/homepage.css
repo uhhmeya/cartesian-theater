@@ -1,0 +1,195 @@
+header {
+    background: rgba(56, 56, 56, 0.3);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 0.75rem 0;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+header h1 {
+    font-size: 1.25rem;
+    margin: 0;
+    color: #ffffff;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo-circle {
+    width: 32px;
+    height: 32px;
+    border: 1.5px solid #b91c1c;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.logo-circle span {
+    font-size: 14px;
+    font-weight: 700;
+    color: #b91c1c;
+    letter-spacing: -0.02em;
+}
+
+header h1:hover .logo-circle {
+    transform: scale(1.05);
+    background: rgba(185, 28, 28, 0.1);
+}
+
+header nav {
+    display: flex;
+    gap: 0.5rem;
+}
+
+header button {
+    font-family: inherit;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    outline: none;
+}
+
+.nav-signin {
+    background: rgba(56, 56, 56, 0.4);
+    color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-signin:hover {
+    background: rgba(70, 70, 70, 0.6);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+.nav-signup {
+    background: #b91c1c;
+    color: #ffffff;
+    border: none;
+    font-weight: 500;
+}
+
+.nav-signup:hover {
+    background: #991b1b;
+}
+
+main.hero {
+    background: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 1rem 20px;
+    min-height: calc(100vh - 60px);
+    max-width: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-content {
+    max-width: 400px;
+    width: 100%;
+    margin: 0 auto;
+    z-index: 10;
+    text-align: center;
+    position: relative;
+    background: rgba(56, 56, 56, 0.4);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.hero-content h1 {
+    font-size: 1.75rem;
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+}
+
+.hero-content p {
+    font-size: 0.875rem;
+    margin-bottom: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 400;
+}
+
+.hero-buttons {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 1.5rem;
+}
+
+.hero-buttons button {
+    font-family: inherit;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    padding: 8px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.hero-buttons button:first-child {
+    background: #b91c1c;
+    color: #ffffff;
+}
+
+.hero-buttons button:first-child:hover {
+    background: #991b1b;
+}
+
+.hero-buttons button:last-child {
+    background: rgba(56, 56, 56, 0.4);
+    color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hero-buttons button:last-child:hover {
+    background: rgba(70, 70, 70, 0.6);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+@media (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        gap: 1rem;
+        padding: 0 20px;
+    }
+
+    .hero-content h1 {
+        font-size: 2rem;
+    }
+
+    .hero-buttons {
+        flex-wrap: wrap;
+    }
+
+    main.hero {
+        padding: 2rem 20px;
+    }
+}
