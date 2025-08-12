@@ -48,10 +48,10 @@ function Dashboard() {
 
     const { sharedSecrets, deriveAllSharedSecrets } = useSharedSecrets(friends, privateIdentityKey)
 
-    const handleIncomingMessage = (data) => {
+    const handleIncomingMessage = async (data) => {
         const secret = sharedSecrets[data.sender]
         if (secret && data.sender !== 'erik')
-            data.text = decrypt(data.text, secret)
+            data.text = await decrypt(data.text, secret)
         setMessages(prev => [...prev, data])
     }
 
@@ -100,9 +100,9 @@ function Dashboard() {
         if (!activeFriend || loadedChats.has(activeFriend.username)
             || activeFriend.username === 'erik' || !sharedSecrets[activeFriend.username]) return
 
-        loadConversationHistory(activeFriend.username).then(history => {
+        loadConversationHistory(activeFriend.username).then(async history => {
             if (history.length) {
-                const decryptedHistory = decryptConversationHistory(history, sharedSecrets, activeFriend)
+                const decryptedHistory = await decryptConversationHistory(history, sharedSecrets, activeFriend)
                 setMessages(prev => [...decryptedHistory, ...prev])
                 setLoadedChats(prev => new Set(prev).add(activeFriend.username))
             }
@@ -110,13 +110,13 @@ function Dashboard() {
         })
     }, [activeFriend, sharedSecrets])
 
-    const handleSendMessage = e => {
+    const handleSendMessage = async e => {
         e.preventDefault()
         if (inputText.trim() && activeFriend) {
             const messageId = `${Date.now()}-${Math.random()}`
 
             const secret = sharedSecrets[activeFriend.username]
-            const encryptedText = secret ? encrypt(inputText, secret) : inputText
+            const encryptedText = secret ? await encrypt(inputText, secret) : inputText
             sendMessage(encryptedText, activeFriend.username, messageId)
 
             setMessages(prev => [...prev, {

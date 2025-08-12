@@ -21,25 +21,37 @@ export const getSharedSecret = async (recipientKeyBundle, myPrivateKey) => {
     return sharedSecret.toString('hex')
 }
 
-export const encrypt = (text, sharedSecret) => {
-    const key = new Uint8Array(sharedSecret.match(/.{1,2}/g).map(byte => parseInt(byte, 16)))
+export const encrypt = async (text, sharedSecret) => {
+    const key = await crypto.subtle.importKey('raw',
+        new Uint8Array(sharedSecret.match(/.{1,2}/g).map(byte => parseInt(byte, 16))),
+        'AES-GCM', false, ['encrypt'])
+
+    const iv = crypto.getRandomValues(new Uint8Array(12))
     const encoded = new TextEncoder().encode(text)
-    return Array.from(encoded).map((byte, i) => byte ^ key[i % key.length]).map(b => b.toString(16).padStart(2, '0')).join('')
+    const encrypted = await crypto.subtle.encrypt({name: 'AES-GCM', iv}, key, encoded)
+
+    return Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('') +
+        Array.from(new Uint8Array(encrypted)).map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
-export const decrypt = (encryptedText, sharedSecret) => {
-    const key = new Uint8Array(sharedSecret.match(/.{1,2}/g).map(byte => parseInt(byte, 16)))
-    const encrypted = new Uint8Array(encryptedText.match(/.{1,2}/g).map(byte => parseInt(byte, 16)))
-    const decrypted = encrypted.map((byte, i) => byte ^ key[i % key.length])
+export const decrypt = async (encryptedText, sharedSecret) => {
+    const key = await crypto.subtle.importKey('raw',
+        new Uint8Array(sharedSecret.match(/.{1,2}/g).map(byte => parseInt(byte, 16))),
+        'AES-GCM', false, ['decrypt'])
+
+    const iv = new Uint8Array(encryptedText.slice(0, 24).match(/.{1,2}/g).map(byte => parseInt(byte, 16)))
+    const encrypted = new Uint8Array(encryptedText.slice(24).match(/.{1,2}/g).map(byte => parseInt(byte, 16)))
+
+    const decrypted = await crypto.subtle.decrypt({name: 'AES-GCM', iv}, key, encrypted)
     return new TextDecoder().decode(decrypted)
 }
 
-export const decryptConversationHistory = (history, sharedSecrets, activeFriend) => {
-    return history.map(msg => {
+export const decryptConversationHistory = async (history, sharedSecrets, activeFriend) => {
+    return await Promise.all(history.map(async msg => {
         const secret = sharedSecrets[activeFriend.username]
-        if (secret) return {...msg, text: decrypt(msg.text, secret)}
+        if (secret) return {...msg, text: await decrypt(msg.text, secret)}
         return msg
-    })
+    }))
 }
 
 
