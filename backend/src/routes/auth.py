@@ -6,7 +6,6 @@ from src.utils import login_required
 
 auth = Blueprint('auth', __name__)
 
-#http public
 @auth.route('/signin', methods=['POST'])
 def signin():
     data = request.get_json()
@@ -23,14 +22,12 @@ def signin():
         print(f"[SIGNIN FAILED] Bad credentials for: {username}")
         return jsonify({"success": False, "message": "Bad credentials"}), 401
 
-    print(f"[SIGNIN SUCCESS] {username} logged in")
     return jsonify({
         "success": True,
         "access_token": create_access_token(identity=str(user.id)),
         "refresh_token": create_refresh_token(identity=str(user.id))
     }), 200
 
-#http public
 @auth.route('/signup', methods=['POST'])
 def signup():
     data = request.get_json()
@@ -48,11 +45,9 @@ def signup():
     user = User(username=username, password_hash=bcrypt.generate_password_hash(password).decode('utf-8'))
     db.session.add(user)
     db.session.commit()
-    print(f"[SIGNUP SUCCESS] Created user: {username}")
 
     return jsonify({"success": True}), 201
 
-#http special
 @auth.route('/refresh', methods=['POST'])
 def refresh():
     refresh_token = request.get_json().get('refresh_token')
@@ -62,7 +57,6 @@ def refresh():
 
     try:
         user_id = decode_token(refresh_token)['sub']
-        print(f"[REFRESH SUCCESS] User ID {user_id} refreshed token")
         return jsonify({
             "success": True,
             "access_token": create_access_token(identity=str(user_id))
@@ -74,7 +68,6 @@ def refresh():
 @auth.route('/upload-keyBundle', methods=['POST'])
 @login_required
 def upload_key_bundle(user):
-
     data = request.get_json()
 
     user.identity_public = data['identityPublic']
@@ -83,7 +76,6 @@ def upload_key_bundle(user):
     user.single_use_keys = data['singleUsePublics']
 
     db.session.commit()
-    print(f"[KEY UPLOAD SUCCESS] User {user.username} uploaded complete key bundle")
     return jsonify({'success': True})
 
 @auth.route('/get-keys/<username>', methods=['GET'])
@@ -96,7 +88,6 @@ def get_user_keys(user, username):
 
     single_use_key = target_user.single_use_keys.pop(0)
     db.session.commit()
-    print(f"[KEY RETRIEVAL SUCCESS] {user.username} retrieved keys for {username}")
 
     return jsonify({
         'success': True,

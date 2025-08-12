@@ -9,13 +9,10 @@ social = Blueprint('social', __name__)
 @social.route('/social-data', methods=['GET'])
 @login_required
 def get_social_data(user):
-    print(f"[SOCIAL-DATA] {user.username} fetching social data")
-
     users = User.query.filter(User.id != user.id).all()
     sent_requests = FriendRequest.query.filter_by(sender_id=user.id).all()
     received_requests = FriendRequest.query.filter_by(receiver_id=user.id).all()
 
-    # converts all friend request objects from database into dictionary
     request_map = {}
     for req in sent_requests:
         request_map[req.receiver_id] = {'status': req.status, 'id': req.id, 'type': 'sent'}
@@ -37,7 +34,6 @@ def get_social_data(user):
         else:
             return 'no_request_exists'
 
-    # builds user list to send to frontend
     user_list = [{
         'id': u.id,
         'username': u.username,
@@ -48,7 +44,6 @@ def get_social_data(user):
         'requestId': request_map.get(u.id, {}).get('id')
     } for u in users]
 
-    # Add erik as a friend
     user_list.append({
         'id': 'erik',
         'username': 'erik',
@@ -64,14 +59,12 @@ def get_social_data(user):
 @social.route('/friend-request', methods=['POST'])
 @login_required
 def send_friend_request(user):
-
     receiver_id = request.get_json().get('receiver_id')
 
     if user.id == receiver_id:
         print(f"[FRIEND-REQUEST FAILED] {user.username} tried to friend themselves")
         return jsonify({'success': False, 'message': 'Cannot send request to yourself'}), 400
 
-    #checks if friend request already exists
     existing = FriendRequest.query.filter_by(
         sender_id=user.id,
         receiver_id=receiver_id,
@@ -84,10 +77,8 @@ def send_friend_request(user):
     friend_request = FriendRequest(sender_id=user.id, receiver_id=receiver_id)
     db.session.add(friend_request)
     db.session.commit()
-    print(f"[FRIEND-REQUEST SUCCESS] {user.username} → user {receiver_id}")
 
-    socketio.emit('social_update', room=f'user_{user.id}')
-    socketio.emit('social_update', room=f'user_{receiver_id}')
+    socketio.emit('social_update')
 
     return jsonify({'success': True}), 201
 
@@ -102,10 +93,8 @@ def accept_friend_request(user, request_id):
 
     friend_request.status = 'accepted'
     db.session.commit()
-    print(f"[ACCEPT SUCCESS] {user.username} accepted request from user {friend_request.sender_id}")
 
-    socketio.emit('social_update', room=f'user_{user.id}')
-    socketio.emit('social_update', room=f'user_{friend_request.sender_id}')
+    socketio.emit('social_update')
 
     return jsonify({'success': True}), 200
 
@@ -120,10 +109,8 @@ def reject_friend_request(user, request_id):
 
     friend_request.status = 'rejected'
     db.session.commit()
-    print(f"[REJECT SUCCESS] {user.username} rejected request from user {friend_request.sender_id}")
 
-    socketio.emit('social_update', room=f'user_{user.id}')
-    socketio.emit('social_update', room=f'user_{friend_request.sender_id}')
+    socketio.emit('social_update')
 
     return jsonify({'success': True}), 200
 
@@ -139,20 +126,15 @@ def cancel_friend_request(user, request_id):
     receiver_id = friend_request.receiver_id
     db.session.delete(friend_request)
     db.session.commit()
-    print(f"[CANCEL SUCCESS] {user.username} cancelled request to user {receiver_id}")
 
-    socketio.emit('social_update', room=f'user_{user.id}')
-    socketio.emit('social_update', room=f'user_{receiver_id}')
+    socketio.emit('social_update')
 
     return jsonify({'success': True}), 200
 
-#gets user's older messages
 @social.route('/conversation/<username>', methods=['GET'])
 @login_required
 def get_conversation(user, username):
-    print(f"[CONVERSATION] {user.username} loading chat with {username}")
     if username == 'erik':
-        print(f"[CONVERSATION] Erik chat - returning empty")
         return jsonify({'success': True, 'messages': []})
 
     other_user = User.query.filter_by(username=username).first()
@@ -165,7 +147,6 @@ def get_conversation(user, username):
         ((Message.sender_id == other_user.id) & (Message.receiver_id == user.id))
     ).order_by(Message.created_at).all()
 
-    print(f"[CONVERSATION SUCCESS] Loaded {len(messages)} messages")
     return jsonify({
         'success': True,
         'messages': [{

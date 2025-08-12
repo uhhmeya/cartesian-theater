@@ -11,6 +11,8 @@
   },
   "dependencies": {
     "@noble/post-quantum": "^0.4.1",
+    "buffer": "^6.0.3",
+    "elliptic": "^6.6.1",
     "js-sha3": "^0.9.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",

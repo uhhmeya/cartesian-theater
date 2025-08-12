@@ -7,12 +7,14 @@ import { UserAvatar } from '../components/UserAvatar'
 import {SidebarItem} from '../components/SidebarItem.jsx'
 import { Message } from '../components/Message.jsx'
 import { useConversation } from '../hooks/useConversation'
-import { loadConversationHistory, shouldScrollToBottom, generateKeyBundle,
-    performX3DH, encrypt } from '../services/crypto.js'
+import { useSharedSecrets } from '../hooks/useSharedSecrets'
+import { loadConversationHistory, shouldScrollToBottom, encrypt, decrypt,
+    decryptConversationHistory } from '../services/crypto.js'
 
 import '../styles/dashboard/sidebar.css'
 import '../styles/dashboard/messages.css'
 import '../styles/dashboard/friends.css'
+import {useLocation} from "react-router-dom";
 
 const handleLogout = (navigate) => {
     localStorage.clear()
@@ -24,6 +26,7 @@ const handleLogout = (navigate) => {
 
 function Dashboard() {
     const navigate = useNavigate()
+    const location = useLocation()
 
     const [messages, setMessages] = useState([])
     const [inputText, setInputText] = useState('')
@@ -31,104 +34,90 @@ function Dashboard() {
     const messagesEndRef = useRef(null)
     const [showNonfriendList, setShowNonfriendList] = useState(false)
     const [activeFriend, setActiveFriend] = useState(null)
-    const conversation = useConversation(messages, myUsername, activeFriend)
     const [loadedChats, setLoadedChats] = useState(new Set())
+
+    const keys = location.state?.privateKeys
+    const [privateIdentityKey] = useState(keys?.identity)
+    const [privateWeeklyKey] = useState(keys?.weekly)
+    const [privateSingleUseKeys] = useState(keys?.singleUse)
+
+    const conversation = useConversation(messages, myUsername, activeFriend)
 
     const { allUsers, friends, outgoingRequests, incomingRequests,
         refresh, sendFriendRequest, acceptRequest, rejectRequest, withdrawRequest } = useSocialData()
 
+    const { sharedSecrets, deriveAllSharedSecrets } = useSharedSecrets(friends, privateIdentityKey)
+
     const handleIncomingMessage = (data) => {
+        const secret = sharedSecrets[data.sender]
+        if (secret && data.sender !== 'erik')
+            data.text = decrypt(data.text, secret)
         setMessages(prev => [...prev, data])
     }
 
     const handleStatusUpdate = (data) => {
         setMessages(prev => prev.map(msg =>
-            msg.id === data.messageId ? {...msg, status: data.status} : msg
-        ))
+            msg.id === data.messageId ? {...msg, status: data.status} : msg))
     }
-
 
     const { connectionStatus, sendMessage, socket } = useWebSocket(handleIncomingMessage, handleStatusUpdate)
 
-    // user first logs in --> key bundle generated and sent to backend
-    useEffect(() => {
-        console.log('Identity key exists?', !!localStorage.getItem('identityPrivateKey'))
-        if (!localStorage.getItem('identityPrivateKey')) {
-            console.log('Generating keys...')
-            generateKeyBundle().then(bundle => {
-                console.log('Generated bundle:', Object.keys(bundle))
-                return apiRequest('/upload-keyBundle', bundle)
-            }).then(response => console.log('Upload result:', response))
-                .catch(err => console.error('Failed:', err))
-        }
-    }, [])
-
-    // refreshes social data when server changes database
+    // auto refresh
     useEffect(() => {
         if (socket) {
-            socket.on('social_update', () => refresh())
+            socket.on('social_update', async () => {
+                await refresh()
+            })
             return () => socket.off('social_update')
         }
     }, [socket, refresh])
 
-    // if new message belongs to current conversation, then auto scroll
+    // auto scroll
     useEffect(() => {
         const lastMessage = messages[messages.length - 1]
         if (shouldScrollToBottom(lastMessage, myUsername, activeFriend))
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages, activeFriend, myUsername])
 
-    // user clicks + --> non friend use Effect : social data is refreshed
+    // user clicks + ⟶ social data refresh
     useEffect(() => {
         if (showNonfriendList) refresh()}, [showNonfriendList])
 
-    // populated = filled up for first time
-    // friends array populated --> population useEffect : sets erik as active friend
+    // friends array populate ⟶ all shared secrets derived + erik set as active friend
+    // new friend ⟶ all shared secrets derived
     useEffect(() => {
-        if (!activeFriend && friends.length) {
-            const erik = friends.find(f => f.username === 'erik')
-            if (erik) setActiveFriend(erik)}}, [friends.length])
+        const isFirstPopulation = !activeFriend
+        deriveAllSharedSecrets().then(() => {
+            if (isFirstPopulation) {
+                const erik = friends.find(f => f.username === 'erik')
+                if (erik) setActiveFriend(erik)
+            }
+        })
+    }, [friends.length])
 
-    // new active friend assignment --> active friend useEffect : loads conversation history
+    // new active friend --> loads convo history
     useEffect(() => {
-        if (!activeFriend || loadedChats.has(activeFriend.username)) return
+        if (!activeFriend || loadedChats.has(activeFriend.username)
+            || activeFriend.username === 'erik' || !sharedSecrets[activeFriend.username]) return
+
         loadConversationHistory(activeFriend.username).then(history => {
             if (history.length) {
-                setMessages(prev => [...history, ...prev])
+                const decryptedHistory = decryptConversationHistory(history, sharedSecrets, activeFriend)
+                setMessages(prev => [...decryptedHistory, ...prev])
                 setLoadedChats(prev => new Set(prev).add(activeFriend.username))
             }
-            setTimeout(() => messagesEndRef.current?.scrollIntoView({ behavior: 'auto' }), 100)
+            messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
         })
-    }, [activeFriend])
+    }, [activeFriend, sharedSecrets])
 
     const handleSendMessage = e => {
         e.preventDefault()
         if (inputText.trim() && activeFriend) {
             const messageId = `${Date.now()}-${Math.random()}`
 
-            if (activeFriend.username === 'erik') {
-                sendMessage(inputText, activeFriend.username, messageId)
-            } else if (!localStorage.getItem(`sharedSecret_${activeFriend.username}`)) {
-                apiRequest(`/get-keys/${activeFriend.username}`, null, 'GET').then(async response => {
-                    console.log('Full response:', response)
-                    console.log('Key bundle data:', response.data)
-                    const recipientKeyBundle = response.data.data
-                    const sharedSecret = await performX3DH(recipientKeyBundle)
-                    console.log('Generated secret:', sharedSecret)
-                    localStorage.setItem(`sharedSecret_${activeFriend.username}`, sharedSecret)
-
-                    const encryptedText = encrypt(inputText, sharedSecret)
-                    console.log('Encrypted text:', encryptedText)
-                    sendMessage(encryptedText, activeFriend.username, messageId)
-                }).catch(error => {
-                    console.error('Crypto failed:', error)
-                    sendMessage(inputText, activeFriend.username, messageId)
-                })
-            } else {
-                const sharedSecret = localStorage.getItem(`sharedSecret_${activeFriend.username}`)
-                const encryptedText = encrypt(inputText, sharedSecret)
-                sendMessage(encryptedText, activeFriend.username, messageId)
-            }
+            const secret = sharedSecrets[activeFriend.username]
+            const encryptedText = secret ? encrypt(inputText, secret) : inputText
+            sendMessage(encryptedText, activeFriend.username, messageId)
 
             setMessages(prev => [...prev, {
                 id: messageId,

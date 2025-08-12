@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Stars } from '../components/Stars.jsx'
 import { apiRequest } from '../services/api.js'
+import { deriveKeysFromPassword} from "../services/crypto.js";
 
 function Login() {
     const navigate = useNavigate()
@@ -25,7 +26,10 @@ function Login() {
         localStorage.setItem('refresh_token', response.data.refresh_token)
         localStorage.setItem('username', user)
         setMessage('Login successful')
-        setTimeout(() => navigate('/home'), 1000)
+
+        const keys = await deriveKeysFromPassword(password, user)
+        await apiRequest('/upload-keyBundle', keys.publicKeys, 'POST')
+        setTimeout(() => navigate('/home', { state: { privateKeys: keys.privateKeys } }), 1000)
     }
 
     const handleSubmit = e => {

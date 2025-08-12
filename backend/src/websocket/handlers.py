@@ -19,7 +19,6 @@ def handle_connect():
         disconnect()
         return False
 
-    # prevents duplicate socket connections
     old_sid = active_connections.get(user.id)
     if old_sid and old_sid != request.sid:
         socketio.server.disconnect(old_sid)
@@ -27,8 +26,6 @@ def handle_connect():
     session['user_id'] = user.id
     session['username'] = user.username
     active_connections[user.id] = request.sid
-
-    print(f"[WEBSOCKET] {user.username} connected")
 
     emit('connection_response', {
         'status': 'connected',
@@ -51,7 +48,6 @@ def handle_connect():
 def handle_disconnect():
     user_id = session.get('user_id')
     if user_id and user_id in active_connections:
-        print(f"[WEBSOCKET] User {session.get('username')} disconnected")
         del active_connections[user_id]
 
 @socketio.on('message')
@@ -60,12 +56,13 @@ def handle_message(data):
     recipient = data.get('recipient')
     message_id = data.get('id')
 
+    print(f"[MSG] {session['username']} -> {recipient}: {text}")
+
     if not text or not recipient:
         emit('error', {'message': 'Missing text or recipient'})
         return
 
     if recipient == 'erik':
-        print(f"[MESSAGE] {session['username']} → erik: {text[:20]}...")
         emit('message', {
             'sender': 'erik',
             'receiver': session['username'],
@@ -79,7 +76,6 @@ def handle_message(data):
         emit('error', {'message': 'User not found'})
         return
 
-    # Save to database
     message = Message(
         sender_id=session['user_id'],
         receiver_id=recipient_user.id,
@@ -87,16 +83,12 @@ def handle_message(data):
     db.session.add(message)
     db.session.commit()
 
-    print(f"[MESSAGE] {session['username']} → {recipient}: {text[:20]}...")
-
-    # Send delivery confirmation to sender
     emit('status_update', {
         'type': 'status_update',
         'messageId': message_id,
         'status': 'delivered'
     })
 
-    # Send if online
     if recipient_user.id in active_connections:
         socketio.emit('message', {
             'sender': session['username'],

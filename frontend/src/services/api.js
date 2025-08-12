@@ -27,9 +27,6 @@ export const apiRequest = async (url, data, method = 'POST') => {
             'Content-Type': 'application/json',
             ...(token && { 'Authorization': `Bearer ${token}` })
         }
-        console.log('Request to:', `${API_BASE}${url}`)
-        console.log('Request headers:', JSON.stringify(headers, null, 2))
-        console.log('Token value:', token)
         return fetch(`${API_BASE}${url}`, {
             method,
             headers,
