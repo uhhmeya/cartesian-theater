@@ -80,8 +80,6 @@ def get_key(user, username):
     if not target_user:
         print("can't get keys for user not in database!")
         return jsonify({'success': False}), 404
-    # print(f"Raw identity_public: {repr(target_user.identity_public)}")
-    # print(f"Type: {type(target_user.identity_public)}")
     return jsonify({
         'success': True,
         'data': {'identityPublic': target_user.identity_public}

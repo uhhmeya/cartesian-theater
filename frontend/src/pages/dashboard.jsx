@@ -1,25 +1,31 @@
-import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useWebSocket } from '../hooks/useWebSocket'
-import { useSocialData } from '../hooks/useSocialData'
-import { UserAvatar } from '../components/UserAvatar'
+import {useEffect, useRef, useState} from 'react'
+import {useLocation, useNavigate} from 'react-router-dom'
+import {useWebSocket} from '../hooks/useWebSocket'
+import {useSocialData} from '../hooks/useSocialData'
+import {UserAvatar} from '../components/UserAvatar'
 import {SidebarItem} from '../components/SidebarItem.jsx'
-import { Message } from '../components/Message.jsx'
-import { apiRequest } from '../services/api'
-import { getSharedSecret } from '../services/crypto.js'
+import {Message} from '../components/Message.jsx'
+import {apiRequest} from '../services/api'
+import {decrypt, encrypt, getSharedSecret} from '../services/crypto.js'
 import '../styles/dashboard/sidebar.css'
 import '../styles/dashboard/messages.css'
 import '../styles/dashboard/friends.css'
-import {useLocation} from "react-router-dom";
 
 const handleLogout = (navigate) => {
     localStorage.clear()
     navigate('/')
 }
 
-const loadConversationHistory = async (username) => {
+const loadHistory = async (username, sharedSecret) => {
     const response = await apiRequest(`/conversation/${username}`, null, 'GET')
-    return response.success ? response.data.messages : []
+    if (!response.success) return []
+
+    // returns decrypted messages
+    return await Promise.all(
+        response.data.messages.map(async msg => ({
+            ...msg,
+            text: await decrypt(msg.text, sharedSecret)
+        })))
 }
 
 function Dashboard() {
@@ -47,9 +53,14 @@ function Dashboard() {
         refresh, sendFriendRequest, acceptRequest, rejectRequest, withdrawRequest } = useSocialData()
 
     const handleIncomingMessage = async (data) => {
-        setMessages(prev => [...prev, data])
-    }
 
+        if (data.sender === 'erik') {
+            setMessages(prev => [...prev, data])
+            return}
+
+        const decryptedText = await decrypt(data.text, sharedSecrets[data.sender])
+        setMessages(prev => [...prev, {...data, text: decryptedText}])
+    }
     const handleStatusUpdate = (data) => {
         setMessages(prev => prev.map(msg =>
             msg.id === data.messageId ? {...msg, status: data.status} : msg))
@@ -81,7 +92,7 @@ function Dashboard() {
     useEffect(() => {
         if (!activeFriend || loadedChats.has(activeFriend.username) || activeFriend.username === 'erik') return
 
-        loadConversationHistory(activeFriend.username).then(async history => {
+        loadHistory(activeFriend.username, sharedSecrets[activeFriend.username]).then(history => {
             if (history.length) {
                 setMessages(prev => [...history, ...prev])
                 setLoadedChats(prev => new Set(prev).add(activeFriend.username))
@@ -114,7 +125,13 @@ function Dashboard() {
         if (inputText.trim() && activeFriend) {
             const messageId = `${Date.now()}-${Math.random()}`
 
-            sendMessage(inputText, activeFriend.username, messageId)
+            if (activeFriend.username === 'erik')
+                sendMessage(inputText, activeFriend.username, messageId)
+
+            else {
+                const encryptedText = await encrypt(inputText, sharedSecrets[activeFriend.username])
+                sendMessage(encryptedText, activeFriend.username, messageId)
+            }
 
             setMessages(prev => [...prev, {
                 id: messageId,
@@ -178,7 +195,7 @@ function Dashboard() {
                         {outgoingRequests.map(req => (
                             <SidebarItem key={req.id}>
                                 <span className="channel-name">{req.username}</span>
-                                <button className="request-btn reject" onClick={() => withdrawRequest(req.requestId)}>âœ—</button>
+                                <button className="request-btn reject" onClick={() => withdrawRequest(req.requestId)}>×</button>
                             </SidebarItem>
                         ))}
                     </div>
@@ -192,8 +209,8 @@ function Dashboard() {
                             <SidebarItem key={req.id}>
                                 <span className="channel-name">{req.username}</span>
                                 <div className="request-buttons">
-                                    <button className="request-btn accept" onClick={() => acceptRequest(req.requestId)}>âœ"</button>
-                                    <button className="request-btn reject" onClick={() => rejectRequest(req.requestId)}>âœ—</button>
+                                    <button className="request-btn accept" onClick={() => acceptRequest(req.requestId)}>✓</button>
+                                    <button className="request-btn reject" onClick={() => rejectRequest(req.requestId)}>×</button>
                                 </div>
                             </SidebarItem>
                         ))}
@@ -203,7 +220,7 @@ function Dashboard() {
                 {/* Logout */}
                 <div className="sidebar-footer">
                     <button className="logout-button" onClick={() => handleLogout(navigate)}>
-                        <span>â†</span> Logout
+                        <span>← </span> Logout
                     </button>
                 </div>
             </div>
