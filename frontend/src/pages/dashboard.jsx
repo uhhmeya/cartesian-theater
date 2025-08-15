@@ -1,16 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { apiRequest} from "../services/api.js";
 import { useNavigate } from 'react-router-dom'
 import { useWebSocket } from '../hooks/useWebSocket'
 import { useSocialData } from '../hooks/useSocialData'
 import { UserAvatar } from '../components/UserAvatar'
 import {SidebarItem} from '../components/SidebarItem.jsx'
 import { Message } from '../components/Message.jsx'
-import { useConversation } from '../hooks/useConversation'
-import { useSharedSecrets } from '../hooks/useSharedSecrets'
-import { loadConversationHistory, shouldScrollToBottom, encrypt, decrypt,
-    decryptConversationHistory } from '../services/crypto.js'
-
+import { apiRequest } from '../services/api'
+import { getSharedSecret } from '../services/crypto.js'
 import '../styles/dashboard/sidebar.css'
 import '../styles/dashboard/messages.css'
 import '../styles/dashboard/friends.css'
@@ -21,37 +17,36 @@ const handleLogout = (navigate) => {
     navigate('/')
 }
 
-// message = {sender, text, time, receiver}
-// messages is an array that stores message objects
+const loadConversationHistory = async (username) => {
+    const response = await apiRequest(`/conversation/${username}`, null, 'GET')
+    return response.success ? response.data.messages : []
+}
 
 function Dashboard() {
     const navigate = useNavigate()
     const location = useLocation()
 
-    const [messages, setMessages] = useState([])
+    const messagesEndRef = useRef(null) // auto scroll
+
+    const [messages, setMessages] = useState([]) // array of message objects
     const [inputText, setInputText] = useState('')
     const [myUsername] = useState(localStorage.getItem('username') || 'User')
-    const messagesEndRef = useRef(null)
     const [showNonfriendList, setShowNonfriendList] = useState(false)
     const [activeFriend, setActiveFriend] = useState(null)
-    const [loadedChats, setLoadedChats] = useState(new Set())
+    const [loadedChats, setLoadedChats] = useState(new Set()) //array of usernames for which chats have been loaded
 
-    const keys = location.state?.privateKeys
-    const [privateIdentityKey] = useState(keys?.identity)
-    const [privateWeeklyKey] = useState(keys?.weekly)
-    const [privateSingleUseKeys] = useState(keys?.singleUse)
+    const privateKey = location.state?.privateKey
+    const [sharedSecrets, setSharedSecrets] = useState({})
 
-    const conversation = useConversation(messages, myUsername, activeFriend)
+    const conversation = !activeFriend ? [] : messages.filter(msg =>
+        (msg.sender === myUsername && msg.receiver === activeFriend.username) ||
+        (msg.sender === activeFriend.username && msg.receiver === myUsername)
+    )
 
     const { allUsers, friends, outgoingRequests, incomingRequests,
         refresh, sendFriendRequest, acceptRequest, rejectRequest, withdrawRequest } = useSocialData()
 
-    const { sharedSecrets, deriveAllSharedSecrets } = useSharedSecrets(friends, privateIdentityKey)
-
     const handleIncomingMessage = async (data) => {
-        const secret = sharedSecrets[data.sender]
-        if (secret && data.sender !== 'erik')
-            data.text = await decrypt(data.text, secret)
         setMessages(prev => [...prev, data])
     }
 
@@ -65,59 +60,61 @@ function Dashboard() {
     // auto refresh
     useEffect(() => {
         if (socket) {
-            socket.on('social_update', async () => {
-                await refresh()
-            })
-            return () => socket.off('social_update')
-        }
+            socket.on('social_update', async () => {await refresh()})
+            return () => socket.off('social_update')}
     }, [socket, refresh])
 
     // auto scroll
     useEffect(() => {
         const lastMessage = messages[messages.length - 1]
-        if (shouldScrollToBottom(lastMessage, myUsername, activeFriend))
+        if (lastMessage && activeFriend &&
+            ((lastMessage.sender === myUsername && lastMessage.receiver === activeFriend.username) ||
+                (lastMessage.sender === activeFriend.username && lastMessage.receiver === myUsername)))
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }, [messages, activeFriend, myUsername])
 
-    // user clicks + ⟶ social data refresh
+    // user clicks + :
     useEffect(() => {
         if (showNonfriendList) refresh()}, [showNonfriendList])
 
-    // friends array populate ⟶ all shared secrets derived + erik set as active friend
-    // new friend ⟶ all shared secrets derived
+    // new active friend :
     useEffect(() => {
-        const isFirstPopulation = !activeFriend
-        deriveAllSharedSecrets().then(() => {
-            if (isFirstPopulation) {
-                const erik = friends.find(f => f.username === 'erik')
-                if (erik) setActiveFriend(erik)
-            }
-        })
-    }, [friends.length])
-
-    // new active friend --> loads convo history
-    useEffect(() => {
-        if (!activeFriend || loadedChats.has(activeFriend.username)
-            || activeFriend.username === 'erik' || !sharedSecrets[activeFriend.username]) return
+        if (!activeFriend || loadedChats.has(activeFriend.username) || activeFriend.username === 'erik') return
 
         loadConversationHistory(activeFriend.username).then(async history => {
             if (history.length) {
-                const decryptedHistory = await decryptConversationHistory(history, sharedSecrets, activeFriend)
-                setMessages(prev => [...decryptedHistory, ...prev])
+                setMessages(prev => [...history, ...prev])
                 setLoadedChats(prev => new Set(prev).add(activeFriend.username))
             }
             messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
         })
-    }, [activeFriend, sharedSecrets])
+    }, [activeFriend])
+
+    useEffect(() => {
+        if (!activeFriend)
+            setActiveFriend({ username: 'erik', id: 'erik' })
+    }, [])
+
+    // mount & new friend :
+    useEffect(() => {
+        if (!privateKey || !friends.length) return
+        friends.forEach(async friend => {
+            if (friend.username === 'erik' || sharedSecrets[friend.username]) return
+            const response = await apiRequest(`/get-key/${friend.username}`, null, 'GET')
+            if (response.success) {
+                console.log(`Public key for ${friend.username}:`, response.data.data.identityPublic?.slice(0, 16) + '...')
+                const secret = getSharedSecret(privateKey, response.data.data.identityPublic)
+                if (secret) {
+                    setSharedSecrets(prev => ({...prev, [friend.username]: secret}))
+                    console.log(`✓ Shared secret derived for ${friend.username}:`, secret.slice(0, 16) + '...')
+                }}})}, [friends, privateKey])
 
     const handleSendMessage = async e => {
         e.preventDefault()
         if (inputText.trim() && activeFriend) {
             const messageId = `${Date.now()}-${Math.random()}`
 
-            const secret = sharedSecrets[activeFriend.username]
-            const encryptedText = secret ? await encrypt(inputText, secret) : inputText
-            sendMessage(encryptedText, activeFriend.username, messageId)
+            sendMessage(inputText, activeFriend.username, messageId)
 
             setMessages(prev => [...prev, {
                 id: messageId,
@@ -125,8 +122,7 @@ function Dashboard() {
                 text: inputText,
                 time: new Date().toISOString(),
                 receiver: activeFriend.username,
-                status: 'sending'
-            }])
+                status: 'sending' }])
             setInputText('')
         }
     }
@@ -182,7 +178,7 @@ function Dashboard() {
                         {outgoingRequests.map(req => (
                             <SidebarItem key={req.id}>
                                 <span className="channel-name">{req.username}</span>
-                                <button className="request-btn reject" onClick={() => withdrawRequest(req.requestId)}>✗</button>
+                                <button className="request-btn reject" onClick={() => withdrawRequest(req.requestId)}>âœ—</button>
                             </SidebarItem>
                         ))}
                     </div>
@@ -196,8 +192,8 @@ function Dashboard() {
                             <SidebarItem key={req.id}>
                                 <span className="channel-name">{req.username}</span>
                                 <div className="request-buttons">
-                                    <button className="request-btn accept" onClick={() => acceptRequest(req.requestId)}>✓</button>
-                                    <button className="request-btn reject" onClick={() => rejectRequest(req.requestId)}>✗</button>
+                                    <button className="request-btn accept" onClick={() => acceptRequest(req.requestId)}>âœ"</button>
+                                    <button className="request-btn reject" onClick={() => rejectRequest(req.requestId)}>âœ—</button>
                                 </div>
                             </SidebarItem>
                         ))}
@@ -207,7 +203,7 @@ function Dashboard() {
                 {/* Logout */}
                 <div className="sidebar-footer">
                     <button className="logout-button" onClick={() => handleLogout(navigate)}>
-                        <span>←</span> Logout
+                        <span>â†</span> Logout
                     </button>
                 </div>
             </div>

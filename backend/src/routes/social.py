@@ -78,6 +78,7 @@ def send_friend_request(user):
     db.session.add(friend_request)
     db.session.commit()
 
+    print(f"EMITTING social_update from {request.endpoint}")
     socketio.emit('social_update')
 
     return jsonify({'success': True}), 201
@@ -94,6 +95,7 @@ def accept_friend_request(user, request_id):
     friend_request.status = 'accepted'
     db.session.commit()
 
+    print(f"EMITTING social_update from {request.endpoint}")
     socketio.emit('social_update')
 
     return jsonify({'success': True}), 200
@@ -110,6 +112,7 @@ def reject_friend_request(user, request_id):
     friend_request.status = 'rejected'
     db.session.commit()
 
+    print(f"EMITTING social_update from {request.endpoint}")
     socketio.emit('social_update')
 
     return jsonify({'success': True}), 200
@@ -127,6 +130,7 @@ def cancel_friend_request(user, request_id):
     db.session.delete(friend_request)
     db.session.commit()
 
+    print(f"EMITTING social_update from {request.endpoint}")
     socketio.emit('social_update')
 
     return jsonify({'success': True}), 200

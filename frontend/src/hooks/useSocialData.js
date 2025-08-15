@@ -19,25 +19,25 @@ export const useSocialData = () => {
 
     const sendFriendRequest = async (userId) => {
         const response = await apiRequest('/friend-request', { receiver_id: userId })
-        if (response.success) refresh()
+        if (response.success) await refresh()
         return response
     }
 
     const acceptRequest = async (requestId) => {
         const response = await apiRequest(`/friend-request/${requestId}/accept`, null, 'POST')
-        if (response.success) refresh()
+        if (response.success) await refresh()
         return response
     }
 
     const rejectRequest = async (requestId) => {
         const response = await apiRequest(`/friend-request/${requestId}/reject`, null, 'POST')
-        if (response.success) refresh()
+        if (response.success) await refresh()
         return response
     }
 
     const withdrawRequest = async (requestId) => {
         const response = await apiRequest(`/friend-request/${requestId}/cancel`, null, 'DELETE')
-        if (response.success) refresh()
+        if (response.success) await refresh()
         return response
     }
 

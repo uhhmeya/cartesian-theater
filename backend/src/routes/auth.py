@@ -65,36 +65,24 @@ def refresh():
         print("[REFRESH FAILED] Invalid or expired token")
         return jsonify({"success": False, "message": "Invalid or expired refresh token"}), 401
 
-@auth.route('/upload-keyBundle', methods=['POST'])
+@auth.route('/upload-key', methods=['POST'])
 @login_required
-def upload_key_bundle(user):
+def upload_key(user):
     data = request.get_json()
-
     user.identity_public = data['identityPublic']
-    user.weekly_public = data['weeklyPublic']
-    user.weekly_signature = data['weeklySignature']
-    user.single_use_keys = data['singleUsePublics']
-
     db.session.commit()
     return jsonify({'success': True})
 
-@auth.route('/get-keys/<username>', methods=['GET'])
+@auth.route('/get-key/<username>', methods=['GET'])
 @login_required
-def get_user_keys(user, username):
+def get_key(user, username):
     target_user = User.query.filter_by(username=username).first()
-    if not target_user: return jsonify({'success': False}), 404
-
-    if not target_user.single_use_keys: return jsonify({'success': False, 'message': 'No keys available'}), 400
-
-    single_use_key = target_user.single_use_keys.pop(0)
-    db.session.commit()
-
+    if not target_user:
+        print("can't get keys for user not in database!")
+        return jsonify({'success': False}), 404
+    # print(f"Raw identity_public: {repr(target_user.identity_public)}")
+    # print(f"Type: {type(target_user.identity_public)}")
     return jsonify({
         'success': True,
-        'data': {
-            'identityPublic': target_user.identity_public,
-            'weeklyPublic': target_user.weekly_public,
-            'weeklySignature': target_user.weekly_signature,
-            'singleUseKey': single_use_key
-        }
+        'data': {'identityPublic': target_user.identity_public}
     })

@@ -2,19 +2,19 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Stars } from '../components/Stars.jsx'
 import { apiRequest } from '../services/api.js'
-import { deriveKeysFromPassword} from "../services/crypto.js";
+import { deriveIdentityKeyPair} from "../services/crypto.js";
 
 function Login() {
+
     const navigate = useNavigate()
-    const [message, setMessage] = useState('') //shows "login successful" else shows error message from backend
-    const [isLoading, setIsLoading] = useState(false) //set to true in handleClick methods to prevent duplicate api calls
+    const [message, setMessage] = useState('') //"login successful"
+    const [isLoading, setIsLoading] = useState(false) //prevents duplicate api calls
     const [user, setUser] = useState('')
     const [password, setPassword] = useState('')
 
     const handleLogin = async ({ user, password }) => {
         setMessage('')
         setIsLoading(true)
-
         const response = await apiRequest('/signin', { user, password })
 
         if (!response.success) {
@@ -25,11 +25,13 @@ function Login() {
         localStorage.setItem('access_token', response.data.access_token)
         localStorage.setItem('refresh_token', response.data.refresh_token)
         localStorage.setItem('username', user)
+
         setMessage('Login successful')
 
-        const keys = await deriveKeysFromPassword(password, user)
-        await apiRequest('/upload-keyBundle', keys.publicKeys, 'POST')
-        setTimeout(() => navigate('/home', { state: { privateKeys: keys.privateKeys } }), 1000)
+        const { privateKey, publicKey } = await deriveIdentityKeyPair(password, user)
+        console.log("identity keys derived successfully!")
+        await apiRequest('/upload-key', { identityPublic: publicKey }, 'POST')
+        setTimeout(() => navigate('/dashboard', { state: { privateKey } }), 1000)
     }
 
     const handleSubmit = e => {
