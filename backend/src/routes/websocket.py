@@ -4,7 +4,7 @@ from datetime import datetime
 from extensions import socketio, db
 from src.models import User
 from src.models.message import Message
-from src.utils.auth import verify_access_token
+from src.routes.utility import verify_access_token
 from threading import Timer
 
 active_connections = {}

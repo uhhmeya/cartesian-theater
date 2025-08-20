@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Stars } from '../components/Stars.jsx'
 import { apiRequest } from '../services/api.js'
-import { deriveIdentityKeyPair} from "../services/crypto.js";
+import { deriveIdentityKeyPair } from '../services/crypto/keys.js'
 
 function Login() {
 
@@ -30,7 +30,7 @@ function Login() {
 
         const { privateKey, publicKey } = await deriveIdentityKeyPair(password, user)
         console.log("identity keys derived successfully!")
-        await apiRequest('/upload-key', { identityPublic: publicKey }, 'POST')
+        await apiRequest('/upload-identity-key', { identityPublic: publicKey }, 'POST')
         setTimeout(() => navigate('/dashboard', { state: { privateKey } }), 1000)
     }
 

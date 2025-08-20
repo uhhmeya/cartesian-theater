@@ -2,7 +2,8 @@ from flask import Blueprint, request, jsonify
 from extensions import db, bcrypt
 from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
 from src.models import User
-from src.utils import login_required
+from src.models.root_key_setup import RootKeySetup
+from src.routes.utility import login_required
 
 auth = Blueprint('auth', __name__)
 
@@ -65,7 +66,7 @@ def refresh():
         print("[REFRESH FAILED] Invalid or expired token")
         return jsonify({"success": False, "message": "Invalid or expired refresh token"}), 401
 
-@auth.route('/upload-key', methods=['POST'])
+@auth.route('/upload-identity-key', methods=['POST'])
 @login_required
 def upload_key(user):
     data = request.get_json()
@@ -73,7 +74,7 @@ def upload_key(user):
     db.session.commit()
     return jsonify({'success': True})
 
-@auth.route('/get-key/<username>', methods=['GET'])
+@auth.route('/get-identity-key/<username>', methods=['GET'])
 @login_required
 def get_key(user, username):
     target_user = User.query.filter_by(username=username).first()
@@ -84,3 +85,64 @@ def get_key(user, username):
         'success': True,
         'data': {'identityPublic': target_user.identity_public}
     })
+
+@auth.route('/get-root-role', methods=['POST'])
+@login_required
+def get_root_role(user):
+    data = request.get_json()
+    friend_username = data['friendUsername']
+
+    friend_user = User.query.filter_by(username=friend_username).first()
+
+    # searches for root key set up object in database
+    existing = RootKeySetup.query.filter(
+        ((RootKeySetup.initiator_id == user.id) & (RootKeySetup.recipient_id == friend_user.id)) |
+        ((RootKeySetup.initiator_id == friend_user.id) & (RootKeySetup.recipient_id == user.id))
+    ).first()
+
+    if not existing:
+
+        # if root key setup object does not exist, then it creates it without the eph key, and returns initiator
+        rootkey_setup = RootKeySetup(
+            initiator_id=user.id,
+            recipient_id=friend_user.id,
+            ephemeral_public="")
+        db.session.add(rootkey_setup)
+        db.session.commit()
+        return jsonify({'success': True, 'data': {'role': 'initiator'}})
+
+    #root key setup object DOES exist at this point
+
+    #returns initiator if it says ur the initiator
+    if existing.initiator_id == user.id:
+        return jsonify({'success': True, 'data': {'role': 'initiator'}})
+
+    #returns recipient and eph key if you're the recipient
+    else:
+        return jsonify({'success': True, 'data': {'role': 'recipient', 'ephemeralPublic': existing.ephemeral_public}})
+
+
+
+@auth.route('/initiate-rootkey', methods=['POST'])
+@login_required
+def initiate_rootkey(user):
+    data = request.get_json()
+    friend_username = data['friendUsername']
+    ephemeral_public = data['ephemeralPublic']
+
+    friend_user = User.query.filter_by(username=friend_username).first()
+
+    rootkey_setup = RootKeySetup.query.filter_by(
+        initiator_id=user.id,
+        recipient_id=friend_user.id
+    ).first()
+
+    rootkey_setup.ephemeral_public = ephemeral_public
+
+    db.session.add(rootkey_setup)
+    db.session.commit()
+
+    return jsonify({'success': True})
+
+
+

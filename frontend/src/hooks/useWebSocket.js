@@ -1,24 +1,28 @@
 import { useState, useEffect, useRef } from 'react'
 import { connectWebSocket} from "../services/websocket.js";
 
-export const useWebSocket = (handleIncomingMessage, handleStatusUpdate) => {
+export const useWebSocket = (handleIncomingMessage, handleStatusUpdate, handleSocialUpdate) => {
     const [connectionStatus, setConnectionStatus] = useState('connecting')
     const socketRef = useRef(null)
     const messageHandlerRef = useRef(handleIncomingMessage)
     const statusHandlerRef = useRef(handleStatusUpdate)
+    const socialHandlerRef = useRef(handleSocialUpdate)
 
     useEffect(() => {
         messageHandlerRef.current = handleIncomingMessage
         statusHandlerRef.current = handleStatusUpdate
-    }, [handleIncomingMessage, handleStatusUpdate])
+        socialHandlerRef.current = handleSocialUpdate
+    }, [handleIncomingMessage, handleStatusUpdate, handleSocialUpdate])
 
     useEffect(() => {
         const access_token = localStorage.getItem('access_token')
         if (!access_token) return
 
         const socket = connectWebSocket(access_token, (status, socketInstance) => {
+            console.log('[WS] Status change:', status)
             setConnectionStatus(status)
             if (status === 'connected' && socketInstance) {
+                console.log('[WS] Socket connected, setting up listeners')
                 socketRef.current = socketInstance
 
                 socketInstance.on('message', data => messageHandlerRef.current(data))
@@ -31,6 +35,8 @@ export const useWebSocket = (handleIncomingMessage, handleStatusUpdate) => {
                 socketInstance.on('connect_error', error => {
                     console.error('Connection failed:', error)
                 })
+
+                socketInstance.on('social_update', () => socialHandlerRef.current?.())
             }
         })
 

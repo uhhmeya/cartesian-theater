@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from extensions import db, socketio
 from src.models import User, FriendRequest
 from src.models.message import Message
-from src.utils.auth import login_required
+from src.routes.utility import login_required
 
 social = Blueprint('social', __name__)
 

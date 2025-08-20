@@ -6,7 +6,9 @@ import {UserAvatar} from '../components/UserAvatar'
 import {SidebarItem} from '../components/SidebarItem.jsx'
 import {Message} from '../components/Message.jsx'
 import {apiRequest} from '../services/api'
-import {decrypt, encrypt, getSharedSecret} from '../services/crypto.js'
+import {encrypt, decrypt} from '../services/crypto/encrypt.js'
+import { generateKeyPair, getSharedSecret } from '../services/crypto/keys.js'
+import { kdfRoot } from '../services/crypto/ratchet.js'
 import '../styles/dashboard/sidebar.css'
 import '../styles/dashboard/messages.css'
 import '../styles/dashboard/friends.css'
@@ -18,9 +20,8 @@ const handleLogout = (navigate) => {
 
 const loadHistory = async (username, sharedSecret) => {
     const response = await apiRequest(`/conversation/${username}`, null, 'GET')
-    if (!response.success) return []
+    if (!response.success || !response.data.messages.length) return []
 
-    // returns decrypted messages
     return await Promise.all(
         response.data.messages.map(async msg => ({
             ...msg,
@@ -39,41 +40,38 @@ function Dashboard() {
     const [myUsername] = useState(localStorage.getItem('username') || 'User')
     const [showNonfriendList, setShowNonfriendList] = useState(false)
     const [activeFriend, setActiveFriend] = useState(null)
-    const [loadedChats, setLoadedChats] = useState(new Set()) //array of usernames for which chats have been loaded
+    const [loadedUsers, setLoadedUsers] = useState(new Set()) //array of usernames for which chats have been loaded
 
     const privateKey = location.state?.privateKey
     const [sharedSecrets, setSharedSecrets] = useState({})
+    const [initialDH, setInitialDH] = useState({})
+    const [ephemeralKeys, setEphemeralKeys] = useState({})
+    const [rootKeys, setRootKeys] = useState({})
+    const [sendingChainKeys, setSendingChainKeys] = useState({})
+    const [receivingChainKeys, setReceivingChainKeys] = useState({})
+    const [pubIdentityKeys, setPubIdentityKeys] = useState({})
 
     const conversation = !activeFriend ? [] : messages.filter(msg =>
         (msg.sender === myUsername && msg.receiver === activeFriend.username) ||
-        (msg.sender === activeFriend.username && msg.receiver === myUsername)
-    )
+        (msg.sender === activeFriend.username && msg.receiver === myUsername))
 
     const { allUsers, friends, outgoingRequests, incomingRequests,
         refresh, sendFriendRequest, acceptRequest, rejectRequest, withdrawRequest } = useSocialData()
 
     const handleIncomingMessage = async (data) => {
-
+        console.log('[MSG] Received:', data)
         if (data.sender === 'erik') {
             setMessages(prev => [...prev, data])
             return}
-
         const decryptedText = await decrypt(data.text, sharedSecrets[data.sender])
         setMessages(prev => [...prev, {...data, text: decryptedText}])
     }
+
     const handleStatusUpdate = (data) => {
-        setMessages(prev => prev.map(msg =>
-            msg.id === data.messageId ? {...msg, status: data.status} : msg))
+        setMessages(prev => prev.map(msg => msg.id === data.messageId ? {...msg, status: data.status} : msg))
     }
 
-    const { connectionStatus, sendMessage, socket } = useWebSocket(handleIncomingMessage, handleStatusUpdate)
-
-    // auto refresh
-    useEffect(() => {
-        if (socket) {
-            socket.on('social_update', async () => {await refresh()})
-            return () => socket.off('social_update')}
-    }, [socket, refresh])
+    const { connectionStatus, sendMessage, socket } = useWebSocket(handleIncomingMessage, handleStatusUpdate, refresh)
 
     // auto scroll
     useEffect(() => {
@@ -86,62 +84,103 @@ function Dashboard() {
 
     // user clicks + :
     useEffect(() => {
-        if (showNonfriendList) refresh()}, [showNonfriendList])
+        if (!showNonfriendList) return
+        refresh()
+    }, [showNonfriendList])
 
     // new active friend :
     useEffect(() => {
-        if (!activeFriend || loadedChats.has(activeFriend.username) || activeFriend.username === 'erik') return
+        if (!activeFriend) {
+            console.log('Early Return : new active friend useEffect prevented from running on mount')
+            return}
 
-        loadHistory(activeFriend.username, sharedSecrets[activeFriend.username]).then(history => {
-            if (history.length) {
-                setMessages(prev => [...history, ...prev])
-                setLoadedChats(prev => new Set(prev).add(activeFriend.username))
+        if (loadedUsers.has(activeFriend.username)) {
+            console.log('Early Return : new active friend useEffect prevented from getting same history twice for ', activeFriend.username)
+            return}
+
+        if (activeFriend.username === 'erik') {
+            console.log('Early Return : prevented getting history for erik')
+            return}
+
+        loadHistory(activeFriend.username, sharedSecrets[activeFriend.username]).then(async history => {
+            if (history.length === 0 && !initialDH[activeFriend.username]) {
+                // generate initial DH here!
+                const response = await apiRequest('/get-root-role', {friendUsername: activeFriend.username})
+
+                if (response.data.data.role === 'initiator') {
+
+                    const [erinEphPriv, erinEphPub] = generateKeyPair()
+                    console.log(`Ephemeral key generated for ${activeFriend.username}:`, erinEphPub.slice(0, 16) + '...')
+                    setEphemeralKeys(prev => ({...prev, [activeFriend.username]: erinEphPriv}))
+
+                    const derivedInitialDH = getSharedSecret(erinEphPriv, pubIdentityKeys[activeFriend.username])
+                    console.log(`✓ Initial DH derived (initiator) for ${activeFriend.username}:`, derivedInitialDH.slice(0, 16) + '...')
+                    setInitialDH(prev => ({...prev, [activeFriend.username]: derivedInitialDH}))
+
+                    await apiRequest('/initiate-rootkey', {friendUsername: activeFriend.username, ephemeralPublic: erinEphPub})
+
+                } else {
+                    const ameyaEphPub = response.data.data.ephemeralPublic
+                    console.log(`Public Ephemeral key retrieved for ${activeFriend.username}:`, ameyaEphPub.slice(0, 16) + '...')
+
+                    const derivedInitialDH = getSharedSecret(privateKey, ameyaEphPub)
+                    console.log(`✓ Initial DH derived (responder) for ${activeFriend.username}:`, derivedInitialDH.slice(0, 16) + '...')
+                    setInitialDH(prev => ({...prev, [activeFriend.username]: derivedInitialDH}))
+                }
+
             }
-            messagesEndRef.current?.scrollIntoView({ behavior: 'auto' })
+            setMessages(prev => [...prev, ...history])
+            setLoadedUsers(prev => new Set([...prev, activeFriend.username]))
         })
     }, [activeFriend])
 
     useEffect(() => {
-        if (!activeFriend)
+        console.log('[DASH] Connection status:', connectionStatus)
+        if (!activeFriend && connectionStatus === 'connected') {
+            console.log('[DASH] Setting erik as active friend')
             setActiveFriend({ username: 'erik', id: 'erik' })
-    }, [])
+        }
+    }, [activeFriend, connectionStatus])
 
-    // mount & new friend :
+    // get all shared secrets
     useEffect(() => {
-        if (!privateKey || !friends.length) return
+        if (!friends.length || connectionStatus !== 'connected') return
+
+        // this is the error
         friends.forEach(async friend => {
             if (friend.username === 'erik' || sharedSecrets[friend.username]) return
-            const response = await apiRequest(`/get-key/${friend.username}`, null, 'GET')
-            if (response.success) {
-                console.log(`Public key for ${friend.username}:`, response.data.data.identityPublic?.slice(0, 16) + '...')
-                const secret = getSharedSecret(privateKey, response.data.data.identityPublic)
-                if (secret) {
-                    setSharedSecrets(prev => ({...prev, [friend.username]: secret}))
-                    console.log(`✓ Shared secret derived for ${friend.username}:`, secret.slice(0, 16) + '...')
-                }}})}, [friends, privateKey])
+
+            const response = await apiRequest(`/get-identity-key/${friend.username}`, null, 'GET')
+            if (!response.success) return
+
+            const ameyaIdentityKey = response.data.data.identityPublic
+            console.log(`Public Identity key retrieved for ${friend.username}:`, ameyaIdentityKey?.slice(0, 16) + '...')
+            setPubIdentityKeys(prev => ({...prev, [friend.username]: ameyaIdentityKey}))
+
+            const secret = getSharedSecret(privateKey, ameyaIdentityKey)
+            console.log(`✓ Shared secret derived for ${friend.username}:`, secret.slice(0, 16) + '...')
+            setSharedSecrets(prev => ({...prev, [friend.username]: secret}))
+        })
+    }, [friends, connectionStatus])
 
     const handleSendMessage = async e => {
         e.preventDefault()
-        if (inputText.trim() && activeFriend) {
-            const messageId = `${Date.now()}-${Math.random()}`
+        if (!inputText.trim() || !activeFriend) return
+        const messageId = `${Date.now()}-${Math.random()}`
 
-            if (activeFriend.username === 'erik')
-                sendMessage(inputText, activeFriend.username, messageId)
+        const messageText = activeFriend.username === 'erik' ?
+            inputText : await encrypt(inputText, sharedSecrets[activeFriend.username])
+        sendMessage(messageText, activeFriend.username, messageId)
 
-            else {
-                const encryptedText = await encrypt(inputText, sharedSecrets[activeFriend.username])
-                sendMessage(encryptedText, activeFriend.username, messageId)
-            }
-
-            setMessages(prev => [...prev, {
-                id: messageId,
-                sender: myUsername,
-                text: inputText,
-                time: new Date().toISOString(),
-                receiver: activeFriend.username,
-                status: 'sending' }])
-            setInputText('')
-        }
+        setMessages(prev => [...prev, {
+            id: messageId,
+            sender: myUsername,
+            text: inputText,
+            time: new Date().toISOString(),
+            receiver: activeFriend.username,
+            status: 'sending'
+        }])
+        setInputText('')
     }
 
     const getNonfriendButton = (status) => {

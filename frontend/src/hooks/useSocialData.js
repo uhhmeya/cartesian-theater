@@ -6,7 +6,9 @@ export const useSocialData = () => {
 
     const refresh = async () => {
         const response = await apiRequest('/social-data', null, 'GET')
-        if (response.success) setAllUsers(response.data.users)
+        if (response.success) {
+            setAllUsers(response.data.users)
+        }
     }
 
     useEffect(() => {

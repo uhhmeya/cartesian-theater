@@ -3,8 +3,12 @@ from flask_cors import CORS
 from datetime import timedelta
 from extensions import db, bcrypt, jwt, socketio
 from src.routes import auth, social
-import src.websocket
+import src.routes.websocket
 import logging
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 logging.getLogger('werkzeug').setLevel(logging.ERROR)
 
@@ -15,8 +19,8 @@ socketio.init_app(app, cors_allowed_origins="*", async_mode='threading')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///users.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = 'your-secret-key-here'
-app.config['JWT_SECRET_KEY'] = 'your-jwt-secret-key-here'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 app.config['JWT_REFRESH_TOKEN_EXPIRES'] = timedelta(hours=12)
 
