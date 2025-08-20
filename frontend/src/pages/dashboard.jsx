@@ -6,8 +6,7 @@ import {UserAvatar} from '../components/UserAvatar'
 import {SidebarItem} from '../components/SidebarItem.jsx'
 import {Message} from '../components/Message.jsx'
 import {apiRequest} from '../services/api'
-import {encrypt, decrypt} from '../services/crypto/encrypt.js'
-import { generateKeyPair, getSharedSecret } from '../services/crypto/keys.js'
+import { generateKeyPair, getSharedSecret, encrypt, decrypt } from '../services/crypto/keys.js'
 import { kdfRoot } from '../services/crypto/ratchet.js'
 import '../styles/dashboard/sidebar.css'
 import '../styles/dashboard/messages.css'
@@ -45,7 +44,6 @@ function Dashboard() {
     const privateKey = location.state?.privateKey
     const [sharedSecrets, setSharedSecrets] = useState({})
     const [initialDH, setInitialDH] = useState({})
-    const [ephemeralKeys, setEphemeralKeys] = useState({})
     const [rootKeys, setRootKeys] = useState({})
     const [sendingChainKeys, setSendingChainKeys] = useState({})
     const [receivingChainKeys, setReceivingChainKeys] = useState({})
@@ -59,7 +57,6 @@ function Dashboard() {
         refresh, sendFriendRequest, acceptRequest, rejectRequest, withdrawRequest } = useSocialData()
 
     const handleIncomingMessage = async (data) => {
-        console.log('[MSG] Received:', data)
         if (data.sender === 'erik') {
             setMessages(prev => [...prev, data])
             return}
@@ -99,45 +96,57 @@ function Dashboard() {
             return}
 
         if (activeFriend.username === 'erik') {
-            console.log('Early Return : prevented getting history for erik')
+            console.log('Early Return : new active friend useEffect prevented getting history for erik')
             return}
 
         loadHistory(activeFriend.username, sharedSecrets[activeFriend.username]).then(async history => {
-            if (history.length === 0 && !initialDH[activeFriend.username]) {
-                // generate initial DH here!
-                const response = await apiRequest('/get-root-role', {friendUsername: activeFriend.username})
 
-                if (response.data.data.role === 'initiator') {
-
-                    const [erinEphPriv, erinEphPub] = generateKeyPair()
-                    console.log(`Ephemeral key generated for ${activeFriend.username}:`, erinEphPub.slice(0, 16) + '...')
-                    setEphemeralKeys(prev => ({...prev, [activeFriend.username]: erinEphPriv}))
-
-                    const derivedInitialDH = getSharedSecret(erinEphPriv, pubIdentityKeys[activeFriend.username])
-                    console.log(`✓ Initial DH derived (initiator) for ${activeFriend.username}:`, derivedInitialDH.slice(0, 16) + '...')
-                    setInitialDH(prev => ({...prev, [activeFriend.username]: derivedInitialDH}))
-
-                    await apiRequest('/initiate-rootkey', {friendUsername: activeFriend.username, ephemeralPublic: erinEphPub})
-
-                } else {
-                    const ameyaEphPub = response.data.data.ephemeralPublic
-                    console.log(`Public Ephemeral key retrieved for ${activeFriend.username}:`, ameyaEphPub.slice(0, 16) + '...')
-
-                    const derivedInitialDH = getSharedSecret(privateKey, ameyaEphPub)
-                    console.log(`✓ Initial DH derived (responder) for ${activeFriend.username}:`, derivedInitialDH.slice(0, 16) + '...')
-                    setInitialDH(prev => ({...prev, [activeFriend.username]: derivedInitialDH}))
-                }
-
+            if (history.length > 0) {
+                console.log(`Early Return : initialDH already exists; fetched nonzero history for : ${activeFriend.username}`)
+                setMessages(prev => [...prev, ...history])
+                setLoadedUsers(prev => new Set([...prev, activeFriend.username]))
+                return
             }
+
+            const savedDH = localStorage.getItem(`initialDH_${activeFriend.username}`)
+            if (savedDH) {
+                console.log(`Early Return : Fetched saved initialDH in storage for : ${activeFriend.username}`)
+                setInitialDH(prev => ({...prev, [activeFriend.username]: savedDH}))
+                setLoadedUsers(prev => new Set([...prev, activeFriend.username]))
+                return
+            }
+
+            const response = await apiRequest('/get-root-role', {friendUsername: activeFriend.username})
+
+            if (response.data.data.role === 'initiator') {
+
+                const [erinEphPriv, erinEphPub] = generateKeyPair()
+                console.log(`Ephemeral keys for ${activeFriend.username} - Private: ${erinEphPriv.slice(0, 16)}..., Public: ${erinEphPub.slice(0, 16)}...`)
+
+                const newDH = getSharedSecret(erinEphPriv, pubIdentityKeys[activeFriend.username])
+                console.log(`Initial DH derived (initiator) for ${activeFriend.username}:`, newDH.slice(0, 16) + '...')
+                setInitialDH(prev => ({...prev, [activeFriend.username]: newDH}))
+                localStorage.setItem(`initialDH_${activeFriend.username}`, newDH)
+
+                await apiRequest('/initiate-rootkey', {friendUsername: activeFriend.username, ephemeralPublic: erinEphPub})
+
+            } else {
+                const ameyaEphPub = response.data.data.ephemeralPublic
+                console.log(`Public Ephemeral key retrieved for ${activeFriend.username}:`, ameyaEphPub.slice(0, 16) + '...')
+
+                const newDH = getSharedSecret(privateKey, ameyaEphPub)
+                console.log(`✓ Initial DH derived (responder) for ${activeFriend.username}:`, newDH.slice(0, 16) + '...')
+                setInitialDH(prev => ({...prev, [activeFriend.username]: newDH}))
+                localStorage.setItem(`initialDH_${activeFriend.username}`, newDH)
+            }
+
             setMessages(prev => [...prev, ...history])
             setLoadedUsers(prev => new Set([...prev, activeFriend.username]))
         })
     }, [activeFriend])
 
     useEffect(() => {
-        console.log('[DASH] Connection status:', connectionStatus)
         if (!activeFriend && connectionStatus === 'connected') {
-            console.log('[DASH] Setting erik as active friend')
             setActiveFriend({ username: 'erik', id: 'erik' })
         }
     }, [activeFriend, connectionStatus])
@@ -146,7 +155,6 @@ function Dashboard() {
     useEffect(() => {
         if (!friends.length || connectionStatus !== 'connected') return
 
-        // this is the error
         friends.forEach(async friend => {
             if (friend.username === 'erik' || sharedSecrets[friend.username]) return
 
@@ -170,6 +178,7 @@ function Dashboard() {
 
         const messageText = activeFriend.username === 'erik' ?
             inputText : await encrypt(inputText, sharedSecrets[activeFriend.username])
+
         sendMessage(messageText, activeFriend.username, messageId)
 
         setMessages(prev => [...prev, {
