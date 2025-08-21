@@ -119,8 +119,15 @@ def get_root_role(user):
 
     #returns recipient and eph key if you're the recipient
     else:
-        return jsonify({'success': True, 'data': {'role': 'recipient', 'ephemeralPublic': existing.ephemeral_public}})
+        ephemeral_key = existing.ephemeral_public
 
+        db.session.delete(existing)
+        db.session.commit()
+
+        return jsonify({'success': True, 'data': {
+            'role': 'recipient',
+            'ephemeralPublic': ephemeral_key
+        }})
 
 
 @auth.route('/initiate-rootkey', methods=['POST'])

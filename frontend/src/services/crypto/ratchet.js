@@ -1,14 +1,18 @@
-export const kdfRoot = async (rootKey, dhOutput) => {
-    const key = await crypto.subtle.importKey('raw',
-        new Uint8Array(rootKey.match(/.{2}/g).map(byte => parseInt(byte, 16))),
-        'HMAC', false, ['sign'], {name: 'HMAC', hash: 'SHA-256'})
+export const createSK = (identitySecret, ephSecret, outputLength = 32) => {
+    const identityBytes = new Uint8Array(identitySecret.match(/.{2}/g).map(byte => parseInt(byte, 16)))
+    const ephBytes = new Uint8Array(ephSecret.match(/.{2}/g).map(byte => parseInt(byte, 16)))
+    const combinedBytes = new Uint8Array([...identityBytes, ...ephBytes])
 
-    const ephemeralBytes = new Uint8Array(dhOutput.match(/.{2}/g).map(byte => parseInt(byte, 16)))
-    const output = await crypto.subtle.sign('HMAC', key, ephemeralBytes)
-    const result = new Uint8Array(output)
+    const encoder = new TextEncoder()
+    const salt = new Uint8Array(32)
+    const info = encoder.encode('DoubleRatchet-KDF-Root')
 
-    return {
-        rootKey: Array.from(result.slice(0, 32)).map(b => b.toString(16).padStart(2, '0')).join(''),
-        chainKey: Array.from(result.slice(32, 64)).map(b => b.toString(16).padStart(2, '0')).join('')
-    }
+    return crypto.subtle.importKey('raw', combinedBytes, 'HKDF', false, ['deriveKey', 'deriveBits'])
+        .then(key => crypto.subtle.deriveBits({
+            name: 'HKDF',
+            hash: 'SHA-256',
+            salt: salt,
+            info: info
+        }, key, outputLength * 8))
+        .then(bits => new Uint8Array(bits))
 }
