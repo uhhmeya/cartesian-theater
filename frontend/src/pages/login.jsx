@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Stars } from '../components/Stars.jsx'
 import { apiRequest } from '../services/api.js'
-import { deriveIdentityKeyPair } from '../services/crypto/keys.js'
+import {deriveIdentityKeyPair, generateKeyPair, signData} from '../services/crypto/keys.js'
 
 function Login() {
 
@@ -29,8 +29,22 @@ function Login() {
         setMessage('Login successful')
 
         const { privateKey, publicKey } = await deriveIdentityKeyPair(password, user)
-        console.log("identity keys derived successfully!")
         await apiRequest('/upload-identity-key', { identityPublic: publicKey }, 'POST')
+
+        const prekeys = []
+        for (let i = 0; i < 100; i++) {
+            const [prekeyPrivate, prekeyPublic] = generateKeyPair()
+            const signature = await signData(privateKey, prekeyPublic)
+            prekeys.push({
+                id: i,
+                public: prekeyPublic,
+                signature
+            })
+            localStorage.setItem(`prekey_${i}`, prekeyPrivate)
+        }
+
+        const uploadResponse = await apiRequest('/upload-prekeys', { prekeys }, 'POST')
+        console.log('Prekey upload response:', uploadResponse)
         setTimeout(() => navigate('/dashboard', { state: { privateKey } }), 1000)
     }
 

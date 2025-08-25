@@ -19,10 +19,8 @@ export const useWebSocket = (handleIncomingMessage, handleStatusUpdate, handleSo
         if (!access_token) return
 
         const socket = connectWebSocket(access_token, (status, socketInstance) => {
-            console.log('[WS] Status change:', status)
             setConnectionStatus(status)
             if (status === 'connected' && socketInstance) {
-                console.log('[WS] Socket connected, setting up listeners')
                 socketRef.current = socketInstance
 
                 socketInstance.on('message', data => messageHandlerRef.current(data))

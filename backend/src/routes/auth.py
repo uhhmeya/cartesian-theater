@@ -1,9 +1,12 @@
+from datetime import datetime
+
 from flask import Blueprint, request, jsonify
 from extensions import db, bcrypt
 from flask_jwt_extended import create_access_token, create_refresh_token, decode_token
 from src.models import User
-from src.models.root_key_setup import RootKeySetup
+from src.models.eph_secret_setup import EphSecretSetup
 from src.routes.utility import login_required
+from src.models.prekey import Prekey
 
 auth = Blueprint('auth', __name__)
 
@@ -14,13 +17,11 @@ def signin():
     password = data.get('password', '')
 
     if not username or not password:
-        print(f"[SIGNIN FAILED] Missing credentials - username: '{username}', password: {'***' if password else 'empty'}")
         return jsonify({"success": False, "message": "Both username and password are required"}), 400
 
     user = User.query.filter_by(username=username).first()
 
     if not user or not bcrypt.check_password_hash(user.password_hash, password):
-        print(f"[SIGNIN FAILED] Bad credentials for: {username}")
         return jsonify({"success": False, "message": "Bad credentials"}), 401
 
     return jsonify({
@@ -95,19 +96,19 @@ def get_root_role(user):
     friend_user = User.query.filter_by(username=friend_username).first()
 
     # searches for root key set up object in database
-    existing = RootKeySetup.query.filter(
-        ((RootKeySetup.initiator_id == user.id) & (RootKeySetup.recipient_id == friend_user.id)) |
-        ((RootKeySetup.initiator_id == friend_user.id) & (RootKeySetup.recipient_id == user.id))
+    existing = EphSecretSetup.query.filter(
+        ((EphSecretSetup.initiator_id == user.id) & (EphSecretSetup.recipient_id == friend_user.id)) |
+        ((EphSecretSetup.initiator_id == friend_user.id) & (EphSecretSetup.recipient_id == user.id))
     ).first()
 
     if not existing:
 
-        # if root key setup object does not exist, then it creates it without the eph key, and returns initiator
-        rootkey_setup = RootKeySetup(
+        eph_secret_setup = EphSecretSetup(
             initiator_id=user.id,
             recipient_id=friend_user.id,
             ephemeral_public="")
-        db.session.add(rootkey_setup)
+
+        db.session.add(eph_secret_setup)
         db.session.commit()
         return jsonify({'success': True, 'data': {'role': 'initiator'}})
 
@@ -139,17 +140,59 @@ def initiate_rootkey(user):
 
     friend_user = User.query.filter_by(username=friend_username).first()
 
-    rootkey_setup = RootKeySetup.query.filter_by(
+    eph_secret_setup = EphSecretSetup.query.filter_by(
         initiator_id=user.id,
         recipient_id=friend_user.id
     ).first()
 
-    rootkey_setup.ephemeral_public = ephemeral_public
+    eph_secret_setup.ephemeral_public = ephemeral_public
 
-    db.session.add(rootkey_setup)
+    db.session.add(eph_secret_setup)
     db.session.commit()
 
     return jsonify({'success': True})
 
+@auth.route('/upload-prekeys', methods=['POST'])
+@login_required
+def upload_prekeys(user):
+    data = request.get_json()
+    prekeys = data['prekeys']
 
+    for index, prekey_data in enumerate(prekeys):
+        prekey = Prekey(
+            user_id=user.id,
+            prekey_index=index,
+            public_key=prekey_data['public'],
+            signature=prekey_data['signature']
+        )
+        db.session.add(prekey)
+
+    db.session.commit()
+    return jsonify({'success': True})
+
+@auth.route('/get-prekey/<username>', methods=['GET'])
+@login_required
+def get_prekey(user, username):
+    target_user = User.query.filter_by(username=username).first()
+    if not target_user:
+        return jsonify({'success': False}), 404
+
+    prekey = Prekey.query.filter_by(user_id=target_user.id, consumed_by_user_id=None).first()
+    if not prekey:
+        return jsonify({'success': False, 'message': 'No prekeys available'}), 404
+
+    result = {
+        'success': True,
+        'data': {
+            'publicKey': prekey.public_key,
+            'signature': prekey.signature,
+            'prekeyIndex': prekey.prekey_index
+        }
+    }
+
+    prekey.consumed_by_user_id = user.id
+    prekey.consumed_at = datetime.utcnow()
+    db.session.commit()
+
+    return jsonify(result)
 
