@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Stars } from '../components/Stars.jsx'
 import { apiRequest } from '../services/api.js'
-import {deriveIdentityKeyPair, generateKeyPair, signData} from '../services/crypto/keys.js'
+import {deriveIdentityKeyPair, generateKeyPair, signData, encryptForStorage} from '../services/crypto/keys.js'
 
 function Login() {
 
@@ -40,7 +40,8 @@ function Login() {
                 public: prekeyPublic,
                 signature
             })
-            localStorage.setItem(`prekey_${i}`, prekeyPrivate)
+            const encryptedPrekey = await encryptForStorage(prekeyPrivate, privateKey)
+            localStorage.setItem(`prekey_${i}`, encryptedPrekey)
         }
 
         const uploadResponse = await apiRequest('/upload-prekeys', { prekeys }, 'POST')

@@ -1,8 +1,8 @@
 from flask import Blueprint, request, jsonify
 from extensions import db, socketio
 from src.models import User, FriendRequest
-from src.models.message import Message
 from src.routes.utility import login_required
+from src.routes.websocket import active_connections
 
 social = Blueprint('social', __name__)
 
@@ -41,14 +41,16 @@ def get_social_data(user):
             request_map.get(u.id, {}).get('status', 'none'),
             request_map.get(u.id, {}).get('type', 'none')
         ),
-        'requestId': request_map.get(u.id, {}).get('id')
+        'requestId': request_map.get(u.id, {}).get('id'),
+        'isOnline': u.id in active_connections
     } for u in users]
 
     user_list.append({
         'id': 'erik',
         'username': 'erik',
         'relationshipStatus': 'we_are_friends',
-        'requestId': None
+        'requestId': None,
+        'isOnline' : True
     })
 
     return jsonify({
@@ -135,29 +137,4 @@ def cancel_friend_request(user, request_id):
 
     return jsonify({'success': True}), 200
 
-@social.route('/conversation/<username>', methods=['GET'])
-@login_required
-def get_conversation(user, username):
-    if username == 'erik':
-        return jsonify({'success': True, 'messages': []})
 
-    other_user = User.query.filter_by(username=username).first()
-    if not other_user:
-        print(f"[CONVERSATION FAILED] User {username} not found")
-        return jsonify({'success': False}), 404
-
-    messages = Message.query.filter(
-        ((Message.sender_id == user.id) & (Message.receiver_id == other_user.id)) |
-        ((Message.sender_id == other_user.id) & (Message.receiver_id == user.id))
-    ).order_by(Message.created_at).all()
-
-    return jsonify({
-        'success': True,
-        'messages': [{
-            'id': str(msg.id),
-            'sender': msg.sender.username,
-            'receiver': msg.receiver.username,
-            'text': msg.text,
-            'time': msg.created_at.isoformat()
-        } for msg in messages]
-    })

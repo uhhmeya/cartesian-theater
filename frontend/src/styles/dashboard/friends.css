@@ -60,8 +60,9 @@
 }
 
 .pending-btn {
-    background: #565656 !important;
-    color: rgba(255, 255, 255, 0.7) !important;
+    background: #2a2a2a !important;
+    color: rgba(255, 255, 255, 0.6) !important;
+    border: 1px solid #3a3a3a !important;
 }
 
 .rejected-btn {

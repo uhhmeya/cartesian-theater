@@ -23,8 +23,25 @@ export const useWebSocket = (handleIncomingMessage, handleStatusUpdate, handleSo
             if (status === 'connected' && socketInstance) {
                 socketRef.current = socketInstance
 
-                socketInstance.on('message', data => messageHandlerRef.current(data))
-                socketInstance.on('status_update', data => statusHandlerRef.current?.(data))
+                // Remove any existing listeners first to avoid duplicates
+                socketInstance.removeAllListeners('message')
+                socketInstance.removeAllListeners('status_update')
+                socketInstance.removeAllListeners('error')
+                socketInstance.removeAllListeners('connect_error')
+                socketInstance.removeAllListeners('social_update')
+
+                // Set up fresh listeners
+                socketInstance.on('message', data => {
+                    messageHandlerRef.current(data)
+                })
+
+                socketInstance.on('status_update', data => {
+                    if (statusHandlerRef.current) {
+                        statusHandlerRef.current(data)
+                    } else {
+                        console.error('[useWebSocket] No status handler available!')
+                    }
+                })
 
                 socketInstance.on('error', data => {
                     console.error('Backend error:', data)
@@ -34,7 +51,9 @@ export const useWebSocket = (handleIncomingMessage, handleStatusUpdate, handleSo
                     console.error('Connection failed:', error)
                 })
 
-                socketInstance.on('social_update', () => socialHandlerRef.current?.())
+                socketInstance.on('social_update', () => {
+                    socialHandlerRef.current?.()
+                })
             }
         })
 

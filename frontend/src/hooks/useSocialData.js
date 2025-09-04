@@ -7,17 +7,48 @@ export const useSocialData = () => {
     const refresh = useCallback(async () => {
         const response = await apiRequest('/social-data', null, 'GET')
         if (response.success) {
-            setAllUsers(response.data.users)
+
+            setAllUsers(prevUsers => {
+                const newUsers = response.data.users
+
+
+                if (prevUsers.length !== newUsers.length) {
+                    console.log('Social data changed: user count')
+                    return newUsers
+                }
+
+                const hasChanged = prevUsers.some((prevUser, index) => {
+                    const newUser = newUsers[index]
+                    return prevUser.id !== newUser.id ||
+                        prevUser.relationshipStatus !== newUser.relationshipStatus ||
+                        prevUser.isOnline !== newUser.isOnline ||
+                        prevUser.username !== newUser.username
+                })
+
+                if (hasChanged) {
+                    return newUsers
+                } else {
+                    return prevUsers
+                }
+            })
         }
     }, [])
 
     useEffect(() => {
         refresh()
+        const interval = setInterval(refresh, 30000)
+        return () => clearInterval(interval)
     }, [refresh])
 
-    // Memoize these so they only change when allUsers actually changes
     const friends = useMemo(() =>
-        allUsers.filter(u => u.relationshipStatus === 'we_are_friends'), [allUsers])
+            allUsers.filter(u => u.relationshipStatus === 'we_are_friends'),
+        [allUsers])
+
+    const onlineFriends = useMemo(() =>
+        friends.filter(f => f.isOnline), [friends])
+
+    const offlineFriends = useMemo(() =>
+        friends.filter(f => !f.isOnline), [friends])
 
     const outgoingRequests = useMemo(() =>
         allUsers.filter(u => u.relationshipStatus === 'i_sent_them_a_request'), [allUsers])
@@ -52,12 +83,14 @@ export const useSocialData = () => {
     return {
         allUsers,
         friends,
+        onlineFriends,
+        offlineFriends,
         outgoingRequests,
         incomingRequests,
         refresh,
         sendFriendRequest,
         acceptRequest,
         rejectRequest,
-        withdrawRequest
+        withdrawRequest,
     }
 }
