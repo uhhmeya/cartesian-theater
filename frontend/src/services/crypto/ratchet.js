@@ -16,17 +16,21 @@ export class State {
     }
 }
 
-export const initiatorEphExchange = async (friendU1sername, identitySecret, otherPublicIdentityKey) => {
+export const initiatorEphExchange = async (friendUsername, identitySecret, otherPublicIdentityKey) => {
     try {
         if (!identitySecret) throw new Error('Identity secret is missing')
         if (!otherPublicIdentityKey) throw new Error('Other public identity key is missing')
 
         const [initiator_EphPriv, initiator_EphPub] = generateKeyPair()
         const ephSecret = getSharedSecret(initiator_EphPriv, otherPublicIdentityKey)
+        console.log(`EPHEMERAL SECRET (initiator) for ${friendUsername}:`, ephSecret)
+
 
         if (!ephSecret) throw new Error('Failed to derive ephemeral secret')
 
         const SK = await createSK(identitySecret, ephSecret)
+        const SKHex = Array.from(SK).map(b => b.toString(16).padStart(2, '0')).join('')
+        console.log(`SK (initiator) for ${friendUsername}:`, SKHex)
 
         const response = await apiRequest('/initiate-rootkey', {friendUsername: friendUsername, ephemeralPublic: initiator_EphPub})
         if (!response.success) throw new Error('Failed to initiate root key on server')
@@ -45,9 +49,13 @@ export const receiverEphExchange = async (friendUsername, identitySecret, myIden
         if (!initiator_EphPub) throw new Error('Initiator ephemeral public key is missing')
 
         const ephSecret = getSharedSecret(myIdentityPrivKey, initiator_EphPub)
+        console.log(`EPHEMERAL SECRET (receiver) for ${friendUsername}:`, ephSecret)
+
         if (!ephSecret) throw new Error('Failed to derive ephemeral secret')
 
         const SK = await createSK(identitySecret, ephSecret)
+        const SKHex = Array.from(SK).map(b => b.toString(16).padStart(2, '0')).join('')
+        console.log(`SK (receiver) for ${friendUsername}:`, SKHex)
 
         return Array.from(SK).map(b => b.toString(16).padStart(2, '0')).join('')
     } catch (error) {
@@ -80,6 +88,8 @@ export const initRatchetAlice = async (friendUsername, otherPublicIdentityKey, S
 
 
         const [newRootKey, sendingChainKey] = await kdfRoot(SK, dhOutput)
+        console.log(`🌳 ROOT KEY (Alice) for ${friendUsername}:`, newRootKey)
+        console.log(`⛓️ INITIAL SENDING CHAIN KEY (Alice):`, sendingChainKey)
         state.Rootkey = newRootKey
         state.sending_ChainKey = sendingChainKey
 
@@ -102,6 +112,8 @@ export const initRatchetBob = async (friendUsername, SK, myPrekeyPrivate, aliceR
         if (!dhOutput) throw new Error('Failed to compute initial DH output')
 
         const [newRootKey1, receivingChainKey] = await kdfRoot(SK, dhOutput)
+        console.log(`🌳 ROOT KEY 1 (Bob) for ${friendUsername}:`, newRootKey1)
+        console.log(`⛓️ INITIAL RECEIVING CHAIN KEY (Bob):`, receivingChainKey)
         state.Rootkey = newRootKey1
         state.recieving_ChainKey = receivingChainKey
 
@@ -130,6 +142,7 @@ export const performReceivingChainRatchet = async (state) => {
         }
 
         const [newReceivingChainKey, messageKey] = await kdfChain(state.recieving_ChainKey)
+        console.log(`📥 RECEIVING MESSAGE KEY #${state.messagesReceived + 1}:`, messageKey)
         state.recieving_ChainKey = newReceivingChainKey
         state.messagesReceived++
         return messageKey
@@ -146,6 +159,7 @@ export const performSendingChainRatchet = async (state) => {
         }
 
         const [newSendingChainKey, messageKey] = await kdfChain(state.sending_ChainKey)
+        console.log(`📤 SENDING MESSAGE KEY #${state.messagesSent + 1}:`, messageKey)
         state.sending_ChainKey = newSendingChainKey
         state.messagesSent++
         return messageKey

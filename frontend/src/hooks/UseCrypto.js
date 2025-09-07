@@ -28,7 +28,9 @@ export function useCrypto(friends, myIdentityPrivKey, activeFriend) {
                 try {
                     const response = await apiRequest(`/get-identity-key/${friend.username}`, null, 'GET')
                     const theirPublicKey = response.data.data.identityPublic
+                    console.log(`Fetched public key for ${friend.username}:`, theirPublicKey)
                     const secret = getSharedSecret(myIdentityPrivKey, theirPublicKey)
+                    console.log(`IDENTITY SECRET for ${friend.username}:`, secret)
 
                     await store(`identity_secret_${friend.username}`, secret, myIdentityPrivKey)
                     setIdentitySecrets(prev => ({ ...prev, [friend.username]: secret }))

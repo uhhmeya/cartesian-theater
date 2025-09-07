@@ -34,7 +34,7 @@ function Dashboard() {
     const {states, setStates, identitySecrets, pubIdentityKeys, SKs, setSKs} = useCrypto(friends, myIdentityPrivKey, activeFriend)
 
     const handleIncomingMessage = async (data) => {
-
+        console.log('handleIncomingMessage called with:', data);
         if (data.sender === 'erik') {
             setMessages(prev => [...prev, {...data, id: data.id || `erik-${Date.now()}-${Math.random()}`, persistent: false}])
             return
@@ -43,9 +43,13 @@ function Dashboard() {
         const {header, payload: encryptedText} = JSON.parse(data.text)
         let state = states[data.sender]
 
-        if (!state && !header.prekeyIndex) return
+        if (!state && (header.prekeyIndex === undefined || header.prekeyIndex === null)) {
+            console.log("message dropped because no state or prekey index exists")
+            return
+        }
 
         if (!state) { // new message for no state means init state
+            console.log('🔍 About to init Bob ratchet for', data.sender);
             const prekey = await getPrekey(header.prekeyIndex, myIdentityPrivKey)
             let SK = SKs[data.sender]
             if (!SK)
@@ -153,8 +157,12 @@ function Dashboard() {
             persistent: saveChats
         }
 
-        if (state.messagesSent === 1)
+        if (state.messagesSent === 1) {
+            console.log('🔍 Adding prekeyIndex to header:', state.usedPrekeyIndex)
             header.prekeyIndex = state.usedPrekeyIndex
+        } else {
+            console.log('🔍 NOT adding prekeyIndex, messagesSent:', state.messagesSent)
+        }
 
         setStates(prev => ({...prev, [activeFriend.username]: state}))
         await store(`ratchet_state_${activeFriend.username}`, state, myIdentityPrivKey)
