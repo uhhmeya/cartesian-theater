@@ -4,23 +4,20 @@ from datetime import datetime
 from extensions import socketio, db
 from src.models import User, Message
 from src.routes.utility import verify_access_token
-from threading import Timer
 
 active_connections = {}
 
-def deliver_queued_messages(user_id):
-
-    # deliver queued messages in order when user comes online
-    queued_messages = Message.query.filter_by(recipient_id=user_id).order_by(Message.created_at).all()
+def deliver_queued_messages(user):
+    queued_messages = Message.query.filter_by(recipient_id=user.id).order_by(Message.created_at).all()
 
     if not queued_messages:
+        print(f"[{datetime.utcnow().isoformat()}] No queued messages for {user.username}")
         return
 
-    user_sid = active_connections.get(user_id)
-    if not user_sid:
-        return
+    user_sid = active_connections.get(user.id)
 
     for msg in queued_messages:
+        print(f"[{datetime.utcnow().isoformat()}] Sending queued message: {msg.sender.username} -> {msg.recipient.username} (ID: {msg.message_id})")
         socketio.emit('message', {
             'sender': msg.sender.username,
             'receiver': msg.recipient.username,
@@ -29,7 +26,6 @@ def deliver_queued_messages(user_id):
             'id': msg.message_id
         }, room=user_sid)
 
-    # delete all delivered messages from DB
     for msg in queued_messages:
         db.session.delete(msg)
 
@@ -41,7 +37,7 @@ def handle_connect(auth):
     user = verify_access_token(token)
 
     if not user:
-        print("websocket connection rejected, bad token")
+        print(f"[{datetime.utcnow().isoformat()}] WebSocket connection rejected, bad token")
         disconnect()
         return False
 
@@ -53,32 +49,24 @@ def handle_connect(auth):
     session['username'] = user.username
     active_connections[user.id] = request.sid
 
+
     emit('connection_response', {
         'status': 'connected',
         'username': user.username})
 
     socketio.emit('social_update')
-
-    deliver_queued_messages(user.id)
-
-    sid = request.sid
-    def send_greeting():
-        socketio.emit('message', {
-            'sender': 'erik',
-            'receiver': user.username,
-            'text': 'Hi?',
-            'time': datetime.utcnow().isoformat()
-        }, to=sid)
-
-    Timer(0.5, send_greeting).start()
+    socketio.sleep(0.1)
+    deliver_queued_messages(user)
 
     return True
 
 @socketio.on('disconnect')
 def handle_disconnect():
     user_id = session.get('user_id')
+    username = session.get('username', 'unknown')
     if user_id and user_id in active_connections:
         del active_connections[user_id]
+        print(f"[{datetime.utcnow().isoformat()}] 🔌 {username} disconnected")
         socketio.emit('social_update')
 
 @socketio.on('message')
@@ -88,41 +76,17 @@ def handle_message(data):
     message_id = data.get('id')
     sender_id = session.get('user_id')
 
-    print(f"[MSG] {session['username']} -> {recipient}: {text}")
-
-    if recipient == 'erik':
-        emit('message', {
-            'sender': 'erik',
-            'receiver': session['username'],
-            'text': 'Hi',
-            'time': datetime.utcnow().isoformat()
-        })
-
-        emit('status_update', {
-            'messageId': message_id,
-            'status': 'delivered'
-        })
-        return
+    print(f"[{datetime.utcnow().isoformat()}] [{session['username']} -> {recipient} ({len(text)} chars)")
 
     recipient_user = User.query.filter_by(username=recipient).first()
-
-    if not recipient_user:
-        emit('status_update', {
-            'messageId': message_id,
-            'status': 'failed'
-        })
-        return
 
     emit('status_update', {
         'messageId': message_id,
         'status': 'delivered'
     })
 
-
     if recipient_user.id in active_connections:
-
         target_room = active_connections[recipient_user.id]
-
         socketio.emit('message', {
             'sender': session['username'],
             'receiver': recipient,
@@ -131,8 +95,7 @@ def handle_message(data):
             'id': message_id
         }, room=target_room)
     else:
-
-
+        print(f"[{datetime.utcnow().isoformat()}] {session['username']} -> {recipient} (queued)")
         message = Message(
             sender_id=sender_id,
             recipient_id=recipient_user.id,

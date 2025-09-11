@@ -45,14 +45,6 @@ def get_social_data(user):
         'isOnline': u.id in active_connections
     } for u in users]
 
-    user_list.append({
-        'id': 'erik',
-        'username': 'erik',
-        'relationshipStatus': 'we_are_friends',
-        'requestId': None,
-        'isOnline' : True
-    })
-
     return jsonify({
         'success': True,
         'users': user_list

@@ -17,6 +17,8 @@ import '../styles/dashboard/friends.css'
 
 function Dashboard() {
 
+    let messageCounter = 0
+
     const navigate = useNavigate()
     const location = useLocation()
     const messagesEndRef = useRef(null)
@@ -34,22 +36,19 @@ function Dashboard() {
     const {states, setStates, identitySecrets, pubIdentityKeys, SKs, setSKs} = useCrypto(friends, myIdentityPrivKey, activeFriend)
 
     const handleIncomingMessage = async (data) => {
-        console.log('handleIncomingMessage called with:', data);
-        if (data.sender === 'erik') {
-            setMessages(prev => [...prev, {...data, id: data.id || `erik-${Date.now()}-${Math.random()}`, persistent: false}])
-            return
-        }
+
+        console.log(`Message #${++messageCounter} from ${data.sender}`);
 
         const {header, payload: encryptedText} = JSON.parse(data.text)
         let state = states[data.sender]
 
+        // handles race condition
         if (!state && (header.prekeyIndex === undefined || header.prekeyIndex === null)) {
-            console.log("message dropped because no state or prekey index exists")
+            console.log("message dropped : no state or prekey index exists.")
             return
         }
 
-        if (!state) { // new message for no state means init state
-            console.log('🔍 About to init Bob ratchet for', data.sender);
+        if (!state) { // new message for no state means initialize
             const prekey = await getPrekey(header.prekeyIndex, myIdentityPrivKey)
             let SK = SKs[data.sender]
             if (!SK)
@@ -101,14 +100,12 @@ function Dashboard() {
         navigate('/')
     }
 
-    // load history2
+    // load history
     useEffect(() => {
         if (!friends.length || !myIdentityPrivKey) return
-
         const loadHistory = async () => {
             const storedMessages = await loadAllPersistentMessages(friends, myIdentityPrivKey)
             setMessages(prev => {const existingIds = new Set(prev.map(msg => msg.id)); const newMessages = storedMessages.filter(msg => !existingIds.has(msg.id)) ;return [...prev, ...newMessages]})}
-
         loadHistory()
     }, [friends, myIdentityPrivKey])
 
@@ -117,12 +114,6 @@ function Dashboard() {
         if (conversation.length > 0) {
             messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })}
     }, [conversation])
-
-    // set erik as active friend on mount
-    useEffect(() => {
-        if (!activeFriend && connectionStatus === 'connected')
-            setActiveFriend({ username: 'erik', id: 'erik' })
-    }, [activeFriend, connectionStatus])
 
     const handleSendMessage = async e => {
         e.preventDefault()
@@ -137,10 +128,6 @@ function Dashboard() {
             await storePersistentMessage(activeFriend.username, newMessage, myIdentityPrivKey)
         }
 
-        if (activeFriend.username === 'erik') {
-            setTimeout(() => {sendMessage(messageText, activeFriend.username, messageId)}, 0)
-            return
-        }
 
         let state = states[activeFriend.username]
 
@@ -158,10 +145,8 @@ function Dashboard() {
         }
 
         if (state.messagesSent === 1) {
-            console.log('🔍 Adding prekeyIndex to header:', state.usedPrekeyIndex)
+            console.log('Adding prekeyIndex to header:', state.usedPrekeyIndex)
             header.prekeyIndex = state.usedPrekeyIndex
-        } else {
-            console.log('🔍 NOT adding prekeyIndex, messagesSent:', state.messagesSent)
         }
 
         setStates(prev => ({...prev, [activeFriend.username]: state}))

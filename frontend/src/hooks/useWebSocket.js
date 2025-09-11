@@ -21,16 +21,15 @@ export const useWebSocket = (handleIncomingMessage, handleStatusUpdate, handleSo
         const socket = connectWebSocket(access_token, (status, socketInstance) => {
             setConnectionStatus(status)
             if (status === 'connected' && socketInstance) {
+                console.log(`[${new Date().toISOString()}] WebSocket connected`)
                 socketRef.current = socketInstance
 
-                // Remove any existing listeners first to avoid duplicates
                 socketInstance.removeAllListeners('message')
                 socketInstance.removeAllListeners('status_update')
                 socketInstance.removeAllListeners('error')
                 socketInstance.removeAllListeners('connect_error')
                 socketInstance.removeAllListeners('social_update')
 
-                // Set up fresh listeners
                 socketInstance.on('message', data => {
                     messageHandlerRef.current(data)
                 })
@@ -39,7 +38,6 @@ export const useWebSocket = (handleIncomingMessage, handleStatusUpdate, handleSo
                     if (statusHandlerRef.current) {
                         statusHandlerRef.current(data)
                     } else {
-                        console.error('[useWebSocket] No status handler available!')
                     }
                 })
 
