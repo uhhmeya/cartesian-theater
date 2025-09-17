@@ -3,7 +3,6 @@ from flask_cors import CORS
 from datetime import timedelta
 from extensions import db, bcrypt, jwt, socketio
 from src.routes import auth, social
-import src.routes.websocket
 import logging
 import os
 from dotenv import load_dotenv
