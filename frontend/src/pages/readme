@@ -1,0 +1,30 @@
+Alice Init
+    * get Bob's public prekey
+    * generate fresh ratchet key pair
+    * get sending chain key
+
+Alice --> Bob
+
+ Bob Init
+    * set ratchet key pair to used prekeys
+
+Bob's ratchet keys = prekeys
+Alice ratchet keys = fresh
+    Therefore, Bob does DH ratchet
+
+Bob DH ratchet
+    * generate sending chain key
+    * generate receiving chain key
+    * generate fresh ratchet keys
+
+Bob --> Alice
+
+ Bob's ratchet keys = fresh
+ Alice's ratchet keys = old fresh
+    Therefore, Alice does DH ratchet
+
+----------------------------------------------------------------------------------------
+
+Erin & Ameya text normally.
+Ameya logs off, logs in, and sends msg to Erin.
+Erin can't decrypt msg.
